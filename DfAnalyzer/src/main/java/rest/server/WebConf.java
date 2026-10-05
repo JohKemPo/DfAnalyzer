@@ -21,6 +21,7 @@ import utils.Utils;
 public class WebConf {
 
     DbConnection db;
+    ProvenanceQueue queue;
 
     @Bean
     DbConnection dbConnection() {
@@ -46,13 +47,27 @@ public class WebConf {
         return new PDE(db.config.getDataIngestorDirectory());
     }
 
+    /**
+     * The ingestion queue used to be a local variable inside #database(), so its counters (pending transactions, transactions processed, queue time) were unreachable from anywhere.
+     */
+    @Bean
+    ProvenanceQueue provenanceQueue() {
+        if (db == null) {
+            dbConnection();
+        }
+        if (queue == null) {
+            queue = new ProvenanceQueue(this.db);
+            queue.start();
+        }
+        return queue;
+    }
+
     @Bean
     DaemonDI database() {
         if (db == null) {
             dbConnection();
         }
-        ProvenanceQueue queue = new ProvenanceQueue(this.db);
-        queue.start();
+        ProvenanceQueue queue = provenanceQueue();
         ProcessObject obj = ProcessObject.newInstance(
                 this.db.config.getDataIngestorDirectory(), ProcessType.DAEMON);
         DaemonDI daemon = (DaemonDI) obj;
