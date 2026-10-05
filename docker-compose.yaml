@@ -18,7 +18,6 @@ services:
     volumes:
       - monetdb_data:/var/monetdb5
       - monetdb_data:/opt/DfAnalyzer/data
-      - ./codigos:/opt/codigos
 
 volumes:
   monetdb_data:

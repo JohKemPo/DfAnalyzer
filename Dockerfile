@@ -100,32 +100,17 @@ ENV PIP_RESUME_RETRIES=50
 # Install pytest
 RUN pip3 install pytest==7.3.1
 
-# Dependências dos pipelines de exemplo em codigos/ (main.py é o único que precisa de transformers/datasets, e só para tokenizar com AutoTokenizer).
-RUN for i in 1 2 3; do \
-        pip3 install --no-cache-dir pandas numpy emoji scikit-learn datasets pymonetdb \
-            "protobuf==4.25.3" "transformers==4.57.2" "huggingface-hub==0.34.0" -U \
-        && break; \
-        echo "pip install falhou (tentativa $i/3) - tentando de novo"; \
-        [ "$i" = 3 ] && exit 1; \
-    done
-
 # Copy the 'dfa-lib-python' directory to the root of the Docker image.
 COPY library/dfa-lib-python /dfa-lib-python/
 
 # Install the Python package.
 WORKDIR /dfa-lib-python
-# Mesmo laço da etapa de ML: aqui o pip baixa as ferramentas de build da biblioteca, e uma queda de conexao no meio vem como erro de conexao (IncompleteRead), que o resume nao cobre.
+# Repete a instalação em caso de queda de conexão.
 RUN for i in 1 2 3; do \
         pip3 install --no-cache-dir . && break; \
         echo "pip install falhou (tentativa $i/3) - tentando de novo"; \
         [ "$i" = 3 ] && exit 1; \
     done
-
-# Pipeline e dados por último: editar main.py não invalida as camadas pesadas acima.
-COPY dados_rotulados/ /opt/dados/dados_rotulados/
-COPY codigos/ /opt/codigos/
-
-ENV PYTHONPATH=/opt
 
 # Expose necessary ports.
 EXPOSE 22000 50000
