@@ -5,8 +5,6 @@ TMPFILE=/tmp/delete_cmds.sql
 
 echo "Starting database dataflow_analyzer..."
 monetdbd start $DB_FARM 2>/dev/null
-
-monetdb stop dataflow_analyzer 2>/dev/null
 monetdb start dataflow_analyzer 2>/dev/null
 
 echo "Generating DELETE commands..."
@@ -18,7 +16,7 @@ WHERE t.system = false
   AND t.type = 0;    -- 0 = table
 EOF
 
-tail -n +2 $TMPFILE.raw \
+cat $TMPFILE.raw \
     | sed 's/^"//; s/"$//' \
     | sed 's/""/"/g' \
     > $TMPFILE
