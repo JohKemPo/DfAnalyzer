@@ -7,16 +7,18 @@ dfa_url = os.environ.get('DFA_URL', "http://localhost:22000/")
 
 
 class Dataflow(ProvenanceObject):
-    """
-    This class defines a dataflow.
-    
-    Attributes:
-        - tag (str): Dataflow tag.
-        - transformations (list, optional): Dataflow transformations.
-    """
-    def __init__(self, tag, transformations=[]):
+    """This class defines a dataflow."""
+    ORIGINS = ("manual", "generated", "curated")
+
+    def __init__(self, tag, transformations=[], origin=None, generator=None):
         ProvenanceObject.__init__(self, tag)
         self.transformations = transformations
+        assert origin is None or origin in self.ORIGINS, \
+            "The origin must be one of {}.".format(self.ORIGINS)
+        if origin is not None:
+            self._origin = origin
+        if generator:
+            self._generator = str(generator)
 
     @property
     def transformations(self):

@@ -5,29 +5,17 @@ from .dependency import Dependency
 from .task_status import TaskStatus
 from .dataset import DataSet
 from .performance import Performance
+from .execution import get_execution_tag
 from datetime import datetime
 
 dfa_url = os.environ.get('DFA_URL',"http://localhost:22000/")
 
 
 class Task(ProvenanceObject):
-    """
-    This class defines a dataflow task.
-
-    Attributes:
-        - id (:obj:`str`): Task Id.
-        - dataflow_tag (:obj:`str`): Dataflow tag.
-        - transformation_tag (:obj:`str`): Transformation tag.
-        - sub_id (:obj:`str`, optional): Task Sub Id.
-        - dependency (:obj:`Task`): Task which the object has a dependency.
-        - workspace (:obj:`str`, optional): Task workspace.
-        - resource (:obj:`str`, optional): Task resource.
-        - output (:obj:`str`, optional): Task output.
-        - error (:obj:`str`, optional): Task error.
-    """
+    """This class defines a dataflow task."""
     def __init__(self, id, dataflow_tag, transformation_tag,
                  sub_id="", dependency=None, workspace="", resource="",
-                 output="", error=""):
+                 output="", error="", execution_tag=None):
         ProvenanceObject.__init__(self, transformation_tag)
         self._workspace = workspace
         self._resource = resource
@@ -37,6 +25,8 @@ class Task(ProvenanceObject):
         self._sets = []
         self._status = TaskStatus.READY.value
         self._dataflow = dataflow_tag.lower()
+        # Vira o campo "execution" no JSON enviado ao DfAnalyzer.
+        self._execution = execution_tag or get_execution_tag()
         self._transformation = transformation_tag.lower()
         self._id = str(id)
         self._sub_id = sub_id
