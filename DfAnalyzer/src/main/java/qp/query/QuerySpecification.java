@@ -43,6 +43,27 @@ public class QuerySpecification {
         this.handleMessage(message);
     }
 
+    /** Constroi a especificacao a partir das colecoes, sem passar pela linguagem de texto. */
+    public QuerySpecification(String dataflowTag, Integer dataflowVersion,
+            AttrMapping.Type mapping,
+            Collection<String> sources, Collection<String> targets,
+            Collection<String> includes, Collection<String> excludes,
+            Collection<String> projections, Collection<String> selections) {
+        this.dataflowTag = dataflowTag;
+        this.dataflowVersion = dataflowVersion;
+        this.mapping = mapping == null ? AttrMapping.Type.LOGICAL : mapping;
+        this.sources = orEmpty(sources);
+        this.targets = orEmpty(targets);
+        this.includes = orEmpty(includes);
+        this.excludes = orEmpty(excludes);
+        this.projections = orEmpty(projections);
+        this.selections = orEmpty(selections);
+    }
+
+    private static Collection<String> orEmpty(Collection<String> values) {
+        return values == null ? Arrays.<String>asList() : values;
+    }
+
     public String getDataflowTag() {
         return dataflowTag;
     }
@@ -58,8 +79,16 @@ public class QuerySpecification {
                 int endFunction = functionStr.lastIndexOf(")");
 
                 if (startFunction > 0 && endFunction != -1) {
-                    OperationType function = OperationType.valueOf(
-                            functionStr.substring(0, startFunction).toUpperCase());
+                    String functionName = functionStr.substring(0, startFunction)
+                            .trim().toUpperCase();
+                    OperationType function;
+                    try {
+                        function = OperationType.valueOf(functionName);
+                    } catch (IllegalArgumentException ex) {
+                        throw new QueryValidationException("Funcao de consulta desconhecida: '"
+                                + functionName + "'. Use mapping, source, target, include,"
+                                + " exclude, selection ou projection.");
+                    }
                     String[] arguments = 
                             functionStr.substring(startFunction + 1, endFunction)
                                     .split(";");
@@ -70,7 +99,13 @@ public class QuerySpecification {
 
                     switch(function){
                         case MAPPING:
-                            this.mapping = AttrMapping.Type.valueOf(arguments[0].toUpperCase());
+                            try {
+                                this.mapping = AttrMapping.Type.valueOf(
+                                        arguments[0].trim().toUpperCase());
+                            } catch (IllegalArgumentException ex) {
+                                throw new QueryValidationException("Mapeamento desconhecido: '"
+                                        + arguments[0] + "'. Use physical, logical ou hybrid.");
+                            }
                             break;
                         case SOURCE:
                             this.sources = Arrays.asList(arguments);
@@ -123,5 +158,31 @@ public class QuerySpecification {
     public Collection<String> getProjections() {
         return projections;
     }
-    
+
+    /* Setters below exist so that QueryGuard can replace every user-supplied fragment with its catalog-derived, re-emitted form. */
+
+    void setSources(Collection<String> sources) {
+        this.sources = sources;
+    }
+
+    void setTargets(Collection<String> targets) {
+        this.targets = targets;
+    }
+
+    void setIncludes(Collection<String> includes) {
+        this.includes = includes;
+    }
+
+    void setExcludes(Collection<String> excludes) {
+        this.excludes = excludes;
+    }
+
+    void setSelections(Collection<String> selections) {
+        this.selections = selections;
+    }
+
+    void setProjections(Collection<String> projections) {
+        this.projections = projections;
+    }
+
 }
