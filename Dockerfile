@@ -1,7 +1,31 @@
-# Use the specific platform version
+# =============================================================================
+# Estágio 1 — build do jar a partir do fonte.
+# =============================================================================
+FROM --platform=linux/amd64 maven:3.8-eclipse-temurin-8 AS builder
+
+WORKDIR /build
+
+# Pom primeiro: as dependências viram uma camada em cache que só é refeita quando o próprio pom muda.
+COPY DfAnalyzer/pom.xml .
+RUN mvn -B -q dependency:go-offline || true
+
+# Fonte do DfA Studio: o mvn package compila o bundle Vite e o deposita em target/classes/static/studio, dentro do proprio jar.
+COPY DfAnalyzer/studio ./studio
+
+COPY DfAnalyzer/src ./src
+
+# Os testes rodam aqui de proposito: a suite de injecao de SQL e um portao de build — se ela regredir, a imagem nao e produzida.
+RUN mvn -B package
+
+# =============================================================================
+# Estágio 2 — imagem de execução.
+# =============================================================================
 FROM --platform=linux/amd64 ubuntu:22.04
 
-# Update and install essential packages
+# Update and install essential packages noninteractive: sem isto o tzdata abre o menu de selecao de fuso e o build trava.
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Locale UTF-8.
 RUN apt-get update && apt-get install -y \
     curl \
     build-essential \
@@ -14,9 +38,13 @@ RUN apt-get update && apt-get install -y \
     wget \
     zip \
     openjdk-11-jdk \
+    tzdata \
     && apt-get clean
 
 # Set environment variables for Java
+ENV LANG=C.UTF-8
+ENV LC_ALL=C.UTF-8
+
 ENV JAVA_HOME=/usr/lib/jvm/java-11-openjdk-amd64
 ENV PATH=$JAVA_HOME/bin:$PATH
 
@@ -47,34 +75,59 @@ RUN dpkg -i libmonetdb-stream26_${MONETDB_VERSION}_amd64.deb \
 
 # Copy the content of the DfAnalyzer directory to the Docker image
 COPY DfAnalyzer/ /opt/DfAnalyzer/
-COPY dados_rotulados/ /opt/dados/dados_rotulados/
-COPY codigos/ /opt/codigos/
+
+# O jar recém-compilado sobrescreve o que veio versionado em DfAnalyzer/target/, garantindo que o binário em execução corresponde ao fonte desta árvore.
+COPY --from=builder /build/target/DfAnalyzer-1.0.jar /opt/DfAnalyzer/target/DfAnalyzer-1.0.jar
 
 # Set the working directory and ensure script permissions
 WORKDIR /opt/DfAnalyzer
-RUN chmod +x restore-database.sh
+
 RUN chmod +x start-dfanalyzer.sh
 
+RUN chmod +x restore-database.sh
+
 # Run the restore-database.sh script
-RUN ./restore-database.sh || true
+RUN ./restore-database.sh
 
 COPY example /opt/example/
+
+# Downloads do PyPI resistentes a rede instavel.
+ENV PIP_DEFAULT_TIMEOUT=100
+ENV PIP_RETRIES=10
+RUN pip3 install --no-cache-dir -U pip
+ENV PIP_RESUME_RETRIES=50
 
 # Install pytest
 RUN pip3 install pytest==7.3.1
 
-RUN pip3 install pandas numpy emoji scikit-learn datasets evaluate torch psutil pymonetdb "protobuf==4.25.3" "transformers==4.57.2" "huggingface-hub==0.34.0" "accelerate>=0.26.0" -U
+# Dependências dos pipelines de exemplo em codigos/ (main.py é o único que precisa de transformers/datasets, e só para tokenizar com AutoTokenizer).
+RUN for i in 1 2 3; do \
+        pip3 install --no-cache-dir pandas numpy emoji scikit-learn datasets pymonetdb \
+            "protobuf==4.25.3" "transformers==4.57.2" "huggingface-hub==0.34.0" -U \
+        && break; \
+        echo "pip install falhou (tentativa $i/3) - tentando de novo"; \
+        [ "$i" = 3 ] && exit 1; \
+    done
 
-
-# Copy the 'dfa-lib-python' directory to the root of the Docker image
+# Copy the 'dfa-lib-python' directory to the root of the Docker image.
 COPY library/dfa-lib-python /dfa-lib-python/
 
-
-# Install the Python package
+# Install the Python package.
 WORKDIR /dfa-lib-python
-RUN python3 setup.py install
+# Mesmo laço da etapa de ML: aqui o pip baixa as ferramentas de build da biblioteca, e uma queda de conexao no meio vem como erro de conexao (IncompleteRead), que o resume nao cobre.
+RUN for i in 1 2 3; do \
+        pip3 install --no-cache-dir . && break; \
+        echo "pip install falhou (tentativa $i/3) - tentando de novo"; \
+        [ "$i" = 3 ] && exit 1; \
+    done
 
-# Expose necessary ports
+# Pipeline e dados por último: editar main.py não invalida as camadas pesadas acima.
+COPY dados_rotulados/ /opt/dados/dados_rotulados/
+COPY codigos/ /opt/codigos/
+
+ENV PYTHONPATH=/opt
+
+# Expose necessary ports.
 EXPOSE 22000 50000
 
 WORKDIR /opt/DfAnalyzer
