@@ -76,7 +76,7 @@ RUN dpkg -i libmonetdb-stream26_${MONETDB_VERSION}_amd64.deb \
 # Copy the content of the DfAnalyzer directory to the Docker image
 COPY DfAnalyzer/ /opt/DfAnalyzer/
 
-# O jar recém-compilado sobrescreve o que veio versionado em DfAnalyzer/target/, garantindo que o binário em execução corresponde ao fonte desta árvore.
+# O jar compilado no primeiro estágio é o único que entra na imagem.
 COPY --from=builder /build/target/DfAnalyzer-1.0.jar /opt/DfAnalyzer/target/DfAnalyzer-1.0.jar
 
 # Set the working directory and ensure script permissions
