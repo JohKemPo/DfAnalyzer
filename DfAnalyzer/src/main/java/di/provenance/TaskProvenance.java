@@ -102,10 +102,20 @@ public class TaskProvenance {
             if (dbms.equals(DBMS.MEMSQL)) {
                 rs = insertTask(db, t.ID, t.dataflowTag, t.transformationTag, t.status, t.workspace, t.resource, t.output, t.error);
             } else {
-                rs = st.executeQuery("SELECT insertTask(" + t.ID + ",'"
-                        + t.dataflowTag + "','" + t.transformationTag + "','"
-                        + t.status + "','" + t.workspace + "','" + t.resource + "','"
-                        + t.output + "','" + t.error + "');");
+                rs = st.executeQuery(
+                    "SELECT insertTask(" +
+                    "CAST(" + t.ID + " AS INTEGER)," +
+                    "CAST('" + t.dataflowTag + "' AS VARCHAR(50))," +
+                    "CAST('" + t.transformationTag + "' AS VARCHAR(50))," +
+                    "CAST('" + t.status + "' AS VARCHAR(10))," +
+                    "CAST('" + t.workspace + "' AS VARCHAR(500))," +
+                    "CAST('" + t.resource + "' AS VARCHAR(100))," +
+                    "CAST('" + t.output + "' AS CLOB)," +
+                    "CAST('" + t.error + "' AS CLOB)," +
+                    "CAST(NULL AS VARCHAR(50))" +
+                    ");"
+                );
+
             }
             if (rs.next()) {
                 t.ID = rs.getInt(1);

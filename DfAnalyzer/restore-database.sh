@@ -1,9 +1,9 @@
 # DB_FARM=/Users/vitor/Documents/repository/rest-dfa/db_farm
 DB_FARM=./data
 SQL_PATH=./monetdb/sql
-# monetdbd create $DB_FARM
-# rm -rf data
-# unzip data-local.zip
+monetdbd create $DB_FARM
+#rm -rf data
+#unzip data-local.zip
 monetdbd stop $DB_FARM
 monetdbd start $DB_FARM
 monetdb destroy -f dataflow_analyzer
