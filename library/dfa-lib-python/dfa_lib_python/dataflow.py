@@ -2,6 +2,7 @@ import requests
 import os
 from .ProvenanceObject import ProvenanceObject
 from .transformation import Transformation
+from .response import check_response
 
 dfa_url = os.environ.get('DFA_URL', "http://localhost:22000/")
 
@@ -53,3 +54,4 @@ class Dataflow(ProvenanceObject):
         url = dfa_url + '/pde/dataflow/json'
         r = requests.post(url, json=self.get_specification())      
         print(r.status_code)
+        check_response(r, f"dataflow '{self._tag}'")

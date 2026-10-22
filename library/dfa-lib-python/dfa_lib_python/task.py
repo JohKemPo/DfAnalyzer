@@ -6,6 +6,7 @@ from .task_status import TaskStatus
 from .dataset import DataSet
 from .performance import Performance
 from .execution import get_execution_tag
+from .response import check_response
 from datetime import datetime
 
 dfa_url = os.environ.get('DFA_URL',"http://localhost:22000/")
@@ -25,7 +26,6 @@ class Task(ProvenanceObject):
         self._sets = []
         self._status = TaskStatus.READY.value
         self._dataflow = dataflow_tag.lower()
-        # Vira o campo "execution" no JSON enviado ao DfAnalyzer.
         self._execution = execution_tag or get_execution_tag()
         self._transformation = transformation_tag.lower()
         self._id = str(id)
@@ -102,4 +102,5 @@ class Task(ProvenanceObject):
         message = self.get_specification()
         r = requests.post(url, json=message)
         print(r.status_code)
+        check_response(r, f"task {self._id} de '{self._transformation}'")
         self._sets = []
