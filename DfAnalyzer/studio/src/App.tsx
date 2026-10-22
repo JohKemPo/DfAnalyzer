@@ -165,6 +165,7 @@ function Studio() {
         <QueryPage
           dataflowId={selection.id}
           dataflowTag={selection.tag}
+          initialDataset={selection.node?.startsWith('d:') ? selection.node.slice(2) : null}
           onBack={() => select(null)}
           section={selection.section}
           onNavigateSection={(section) => updateSelection({ section })}

@@ -34,12 +34,14 @@ interface Column {
 export function QueryPage({
   dataflowId,
   dataflowTag,
+  initialDataset = null,
   onBack,
   section,
   onNavigateSection,
 }: {
   dataflowId: number;
   dataflowTag: string;
+  initialDataset?: string | null;
   onBack: () => void;
   section: DataflowSection;
   onNavigateSection: (section: DataflowSection) => void;
@@ -54,7 +56,7 @@ export function QueryPage({
   const latestVersion = versions.data?.[0]?.version ?? null;
   const executions = useExecutions(dataflowId, latestVersion);
 
-  const [chosen, setChosen] = useState<string[]>([]);
+  const [chosen, setChosen] = useState<string[]>(initialDataset ? [initialDataset] : []);
   const [picked, setPicked] = useState<string[]>([]);
   const [conditions, setConditions] = useState<Condition[]>([]);
   const [limit, setLimit] = useState(100);
@@ -106,6 +108,13 @@ export function QueryPage({
     if (!graphFlow.data || chosen.length < 2) return null;
     return findDerivationPath(graphFlow.data, chosen[0], chosen[chosen.length - 1]);
   }, [graphFlow.data, chosen]);
+
+  const removeDataset = (tag: string) => {
+    const ofTag = (column: string) => column.startsWith(`${tag}.`);
+    setChosen(chosen.filter((t) => t !== tag));
+    setPicked(picked.filter((column) => !ofTag(column)));
+    setConditions(conditions.filter((condition) => !ofTag(condition.column)));
+  };
 
   const loading = graphDatasets.isPending || graphFlow.isPending;
 
@@ -159,7 +168,7 @@ export function QueryPage({
                 {chosen.map((tag) => (
                   <Box
                     key={tag} component="button" type="button"
-                    onClick={() => setChosen(chosen.filter((t) => t !== tag))}
+                    onClick={() => removeDataset(tag)}
                     aria-label={`Remover ${tag}`}
                     sx={{
                       display: 'inline-flex', alignItems: 'center', gap: 0.625, height: 22,
