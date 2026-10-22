@@ -2,7 +2,6 @@ import type { Edge, Node } from '@xyflow/react';
 import type { GraphResponse } from '../api/catalog';
 import { layoutGraph, NODE_HEIGHT, NODE_WIDTH } from './layout';
 
-/** Exportação do grafo como imagem. */
 const INK = '#1b1f24';
 const MUTED = '#667085';
 const BORDER = '#d5dae1';
@@ -55,7 +54,7 @@ export function graphToSvg(graph: Pick<GraphResponse, 'nodes' | 'edges'>, title?
   for (const edge of graph.edges) {
     const from = placed.get(edge.source);
     const to = placed.get(edge.target);
-    if (!from || !to) continue;  // Aresta para um nó que o grafo não trouxe: nada a desenhar.
+    if (!from || !to) continue;
     const x1 = from.x + NODE_WIDTH;
     const y1 = from.y + NODE_HEIGHT / 2;
     const x2 = to.x;
@@ -94,7 +93,6 @@ export function graphToSvg(graph: Pick<GraphResponse, 'nodes' | 'edges'>, title?
       `<text x="16" y="24" font-size="12.5" font-weight="600" fill="${INK}" ` +
         `font-family="IBM Plex Mono, Consolas, monospace">${escapeXml(truncate(node.tag, LABEL_MAX))}</text>`,
       `<text x="16" y="42" font-size="10.5" fill="${accent}">${caption}</text>`,
-      // O nome inteiro fica acessível mesmo quando o rótulo foi cortado.
       `<title>${escapeXml(node.tag)}</title>`,
       '</g>',
     );
@@ -129,7 +127,7 @@ export function downloadSvg(filename: string, svg: string): void {
   download(filename, new Blob([svg], { type: 'image/svg+xml;charset=utf-8' }));
 }
 
-/** Rasteriza o SVG num canvas (2x, para não sair borrado num slide). */
+/** Rasteriza o SVG em escala 2x. */
 export function downloadPng(filename: string, svg: string, scale = 2): Promise<void> {
   return new Promise((resolve, reject) => {
     const image = new Image();

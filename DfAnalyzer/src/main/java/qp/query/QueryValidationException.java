@@ -1,7 +1,7 @@
 package qp.query;
 
 /**
- * Raised when a user-supplied query specification does not survive the deterministic allowlist validation performed by QueryGuard.
+ * Consulta recusada pelo QueryGuard.
  *
  * @author joao
  */

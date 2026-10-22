@@ -17,7 +17,7 @@ import qp.dataflow.Dataset;
 import qp.dataflow.Transformation;
 
 /**
- * Deterministic allowlist validator for the user-supplied parts of a QuerySpecification.
+ * Valida contra o catálogo as partes de uma QuerySpecification vindas do usuário.
  *
  * @author joao
  */
@@ -26,15 +26,13 @@ public final class QueryGuard {
     private static final Set<String> COMPARISON_OPERATORS = new LinkedHashSet<>(
             Arrays.asList("=", "!=", "<>", "<", "<=", ">", ">="));
 
-    /** Columns every dataset view carries, independently of its attributes. */
+    /** Colunas presentes em toda view de dataset. */
     private static final String ID_COLUMN = "id";
 
     private final Dataflow dataflow;
 
-    /** Lowercase dataset tag -> canonical dataset tag. */
     private final Map<String, String> datasetTags = new LinkedHashMap<>();
 
-    /** Canonical dataset tag -> (lowercase column -> canonical column). */
     private final Map<String, Map<String, String>> datasetColumns = new LinkedHashMap<>();
 
     public QueryGuard(Dataflow dataflow) {
@@ -46,7 +44,7 @@ public final class QueryGuard {
         buildCatalog();
     }
 
-    /** Validates and canonicalizes spec in place. */
+    /** Valida e canoniza a especificação no lugar. */
     public static void enforce(QuerySpecification spec, Dataflow dataflow) {
         new QueryGuard(dataflow).validate(spec);
     }
@@ -70,7 +68,7 @@ public final class QueryGuard {
         spec.setSelections(selections);
     }
 
-    // ---------------------------------------------------------------- catalog
+    // ---------------------------------------------------------------- catálogo
 
     private void buildCatalog() {
         for (Dataset dataset : dataflow.getDatasets()) {
@@ -91,7 +89,7 @@ public final class QueryGuard {
                 }
             }
 
-            // The dataset view exposes one <transformation>_task_id column per transformation that produces or consumes it (see DataflowProvenance.getSQLToCreateDataSetView).
+            // Uma coluna <transformacao>_task_id por transformação que produz ou consome o dataset.
             for (Transformation t : dataflow.getDatasetPreviousTransformations(dataset)) {
                 addTaskIdColumn(columns, t);
             }
@@ -99,7 +97,7 @@ public final class QueryGuard {
                 addTaskIdColumn(columns, t);
             }
 
-            // Extractor-derived columns, same source.
+            // Colunas dos extratores.
             for (Extractor extractor : dataset.getIndexingExtractors() == null
                     ? Collections.<Extractor>emptyList() : dataset.getIndexingExtractors()) {
                 if (extractor.getTag() == null) {
@@ -125,7 +123,7 @@ public final class QueryGuard {
         }
     }
 
-    // ------------------------------------------------------------ dataset tag
+    // ------------------------------------------------------------ tag de dataset
 
     private Collection<String> canonicalizeDatasetTags(Collection<String> tags, String clause) {
         List<String> canonical = new ArrayList<>();
@@ -154,7 +152,7 @@ public final class QueryGuard {
         return String.join(", ", datasetTags.values());
     }
 
-    // ------------------------------------------------------------- projection
+    // ---------------------------------------------------------------- projeção
 
     private String canonicalizeProjection(String projection) {
         if (projection == null || projection.trim().isEmpty()) {
@@ -166,7 +164,7 @@ public final class QueryGuard {
         return column;
     }
 
-    // -------------------------------------------------------------- selection
+    // ----------------------------------------------------------------- seleção
 
     private String canonicalizeSelection(String selection) {
         if (selection == null || selection.trim().isEmpty()) {
@@ -261,9 +259,7 @@ public final class QueryGuard {
         return resolveColumn(token, lexer, context);
     }
 
-    /**
-     * Resolves <dataset>.<attribute> against the catalog and re-emits it with the catalog's own spelling.
-     */
+    /** Resolve <dataset>.<atributo> no catálogo e o reescreve com a grafia dele. */
     private String resolveColumn(Token datasetToken, Lexer lexer, String context) {
         lexer.expectOperator(".", context + ": as colunas devem ser qualificadas (dataset.atributo)");
         Token attributeToken = lexer.next(context);
@@ -283,12 +279,12 @@ public final class QueryGuard {
         return dataset + "." + column;
     }
 
-    /** Emits a MonetDB string literal, doubling any embedded single quote. */
+    /** Literal de texto do MonetDB, com aspas simples dobradas. */
     private static String quote(String value) {
         return "'" + value.replace("'", "''") + "'";
     }
 
-    // ------------------------------------------------------------------ lexer
+    // --------------------------------------------------------------- analisador
 
     private static final class Token {
 
@@ -307,7 +303,6 @@ public final class QueryGuard {
         }
     }
 
-    /** Hand-written lexer. */
     private static final class Lexer {
 
         private final String input;

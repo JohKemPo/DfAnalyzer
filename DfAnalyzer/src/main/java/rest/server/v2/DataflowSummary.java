@@ -1,20 +1,20 @@
 package rest.server.v2;
 
 /**
- * One row of GET /api/v2/dataflows — everything the Studio's dataflow table shows, in a single round trip instead of one request per dataflow.
+ * Uma linha de GET /api/v2/dataflows.
  *
  * @author joao
  */
 public class DataflowSummary {
 
     public enum Status {
-        /** No task was ever ingested for this dataflow. */
+        /** Nenhuma task ingerida. */
         EMPTY,
-        /** At least one task is RUNNING. */
+        /** Alguma task em RUNNING. */
         RUNNING,
-        /** Tasks exist and none is running, but some are still READY. */
+        /** Nenhuma em RUNNING, mas alguma em READY. */
         READY,
-        /** Every ingested task reached FINISHED. */
+        /** Todas as tasks em FINISHED. */
         FINISHED
     }
 
@@ -23,19 +23,19 @@ public class DataflowSummary {
     private final int transformations;
     private final int datasets;
     private final int versions;
-    /** Runs of this dataflow, across all versions. */
+    /** Execuções em todas as versões. */
     private final int executions;
     private final int tasks;
     private final int tasksRunning;
     private final int tasksReady;
-    /** ISO-ish `yyyy-MM-dd HH:mm:ss` as stored by performance.endtime; null if none. */
+    /** `yyyy-MM-dd HH:mm:ss`, como em performance.endtime; null se não houver. */
     private final String lastRun;
-    /** Mean wall-clock seconds per performance record; null when unmeasurable. */
+    /** Média de segundos por registro de performance; null se não houver. */
     private final Double avgDurationSeconds;
     private final Status status;
-    /** Manual, generated, curated; null when not declared. */
+    /** manual, generated ou curated; null se não declarado. */
     private final String origin;
-    /** Free text naming what generated the mapping; null when not declared. */
+    /** Quem gerou o mapeamento; null se não declarado. */
     private final String generator;
 
     public DataflowSummary(int id, String tag, int transformations, int datasets, int versions,

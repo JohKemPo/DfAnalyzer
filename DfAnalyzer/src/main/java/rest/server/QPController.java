@@ -38,14 +38,13 @@ public class QPController {
                     .contentType(MediaType.TEXT_PLAIN)
                     .body(qpHandler.runQuery(dataflowTag, dataflowID, specification));
         } catch (QueryValidationException ex) {
-            // Client error: the specification did not survive the catalog allowlist.
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .contentType(MediaType.TEXT_PLAIN)
                     .body(ex.getMessage());
         }
     }
 
-    /** The legacy client posts a form-encoded body whose single field is named message. */
+    /** O cliente antigo envia um formulário com um único campo, message. */
     private static String extractSpecification(String body) throws UnsupportedEncodingException {
         String decoded = URLDecoder.decode(body, "UTF-8");
         return decoded.startsWith(MESSAGE_PREFIX)

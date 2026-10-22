@@ -1,7 +1,7 @@
 package rest.server.v2;
 
 /**
- * One row of GET /api/v2/dataflows/{id}/versions/{version}/executions.
+ * Uma linha de GET /api/v2/dataflows/{id}/versions/{version}/executions.
  *
  * @author joao
  */

@@ -18,7 +18,7 @@ import rest.server.v2.TimelineRow;
 import rest.server.v2.VersionSummary;
 
 /**
- * Nada aqui inventa uma coluna que o esquema não tem — ver a nota em rest.server.v2.IngestionHealth. task.status só assume RUNNING, FINISHED e FINISHED_WITH_ERROR (pde.enumeration.TaskStatus); é contra esses três valores que toda consulta aqui filtra.
+ * Consultas de analytics sobre execução, task e performance; task.status só assume RUNNING, FINISHED e FINISHED_WITH_ERROR.
  *
  * @author joao
  */
@@ -141,9 +141,7 @@ public class AnalyticsDao {
                 secondsOf(row, "durationseconds"));
     }
 
-    /**
-     * Uma barra por transformação: início e fim são o mínimo/máximo entre as tasks daquela transformação nesta execução (uma task pode ter mais de uma linha em performance — subtarefas de extração).
-     */
+    /** Uma barra por transformação, do menor início ao maior fim entre as tasks dela. */
     private static final String TIMELINE_ROWS_SQL =
             "SELECT dt.tag AS transformation,"
             + " COUNT(DISTINCT t.id) AS taskcount,"
@@ -166,7 +164,7 @@ public class AnalyticsDao {
                 return new ArrayList<>();
             }
 
-            // Deslocamento relativo ao inicio da PRIMEIRA transformacao, nao ao relogio -- o grafico e da execucao, nao de um horario do dia.
+            // Deslocamento a partir do início da primeira transformação.
             double globalStart = rows.stream()
                     .mapToDouble(r -> epochSeconds(r, "mintstart"))
                     .min().orElse(0);
@@ -262,9 +260,7 @@ public class AnalyticsDao {
             "SELECT t.id AS id FROM task t, data_transformation dt"
             + " WHERE t.df_exec = :exec AND dt.id = t.dt_id AND LOWER(dt.tag) = LOWER(:tag);";
 
-    /**
-     * Ids de task de uma transformação, dentro de uma execução — o que QueryService usa para filtrar uma consulta por execução sem tocar a gramática do QueryGuard: a lista volta pronta para virar um IN (...) normal, que passa pelo mesmo validador de qualquer outra condição.
-     */
+    /** Ids de task de uma transformação numa execução, para o filtro por execução da consulta. */
     public List<Integer> getTaskIdsForExecution(int executionId, String transformationTag) {
         try (Connection con = sql2o.open()) {
             Table table = con.createQuery(TASK_IDS_FOR_EXECUTION_SQL)
@@ -287,9 +283,7 @@ public class AnalyticsDao {
             + " AND p.endtime IS NOT NULL AND p.endtime >= :since"
             + " ORDER BY p.endtime;";
 
-    /**
-     * Endtime de toda task concluída desde sinceTimestamp (formato yyyy-MM-dd HH:mm:ss, mesmo de performance.starttime).
-     */
+    /** Endtime de toda task concluída desde sinceTimestamp (`yyyy-MM-dd HH:mm:ss`). */
     public List<String> getRecentEndTimes(int dataflowId, String sinceTimestamp) {
         try (Connection con = sql2o.open()) {
             Table table = con.createQuery(RECENT_ENDTIMES_SQL)

@@ -3,13 +3,13 @@ package rest.server.v2;
 import java.util.List;
 
 /**
- * Payload of GET /api/v2/dataflows/{id}/ingestion-throughput.
+ * Vazão de ingestão de um dataflow.
  *
  * @author joao
  */
 public class IngestionThroughput {
 
-    /** 24 baldes de uma hora, do mais antigo (23h atrás) ao mais recente (agora). */
+    /** 24 faixas de uma hora, da mais antiga à atual. */
     private final List<Integer> hourlyTaskCounts;
     private final double tasksPerMinute;
     /** Variação da 1ª metade da janela para a 2ª; null sem base de comparação. */

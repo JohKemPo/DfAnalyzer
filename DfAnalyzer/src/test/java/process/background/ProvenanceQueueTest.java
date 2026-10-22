@@ -15,7 +15,7 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 
 /**
- * O que acontecia.
+ * Uma transação inválida não pode derrubar a thread de ingestão.
  *
  * @author joao
  */
@@ -44,7 +44,7 @@ public class ProvenanceQueueTest {
     public void lookupSurvivesANullEntryInTheList() throws Exception {
         ProvenanceQueue queue = new ProvenanceQueue(null);
         Dataflow wanted = dataflowTagged("soma");
-        // Exatamente o estado que derrubava a thread: um null no meio da lista.
+        // Um null no meio da lista.
         seed(queue, null, wanted);
 
         assertSame("o dataflow depois do null tem de ser encontrado",

@@ -98,7 +98,7 @@ public class GraphServiceTest {
         assertTrue(ids(response.getNodes()).containsAll(
                 Arrays.asList("t:preparar", "t:dividir", "t:balancear")));
 
-        // O dataset intermediário vira ARESTA, não nó.
+        // O dataset intermediário vira aresta.
         assertFalse("oprep é intermediário: deve ser aresta, não nó",
                 ids(response.getNodes()).contains("d:oprep"));
 
@@ -112,7 +112,7 @@ public class GraphServiceTest {
         GraphResponse response = graph(GraphResponse.View.TRANSFORMATION);
         Set<String> nodeIds = ids(response.getNodes());
 
-        // Um dataset sem produtor (ou sem consumidor) não tem duas pontas para virar aresta; some do grafo se não for tratado, e some justamente a entrada e a saída do pipeline.
+        // Entrada e saída do fluxo não têm duas pontas e viram nós.
         assertTrue("a entrada do fluxo precisa aparecer", nodeIds.contains("d:iprep"));
         assertTrue("as saídas do fluxo precisam aparecer", nodeIds.contains("d:odiv"));
         assertTrue(nodeIds.contains("d:obal"));
@@ -161,7 +161,7 @@ public class GraphServiceTest {
         }
     }
 
-    // ---------------------------------------------------------------- F1
+    // ------------------------------------------------------------ linhagem
 
     @Test
     public void lineageSeparatesUpstreamFromDownstream() {
@@ -193,7 +193,7 @@ public class GraphServiceTest {
         GraphResponse response = graph(GraphResponse.View.DATASET);
         LineageResponse lineage = service.traceLineage(response, "d:odiv");
 
-        // A aresta oprep->obal liga um ancestral do foco a um irmão dele: acendê-la sugeriria que odiv influenciou obal.
+        // oprep->obal liga um ancestral do foco a um irmão dele.
         assertFalse(lineage.getEdges().contains("d:oprep->d:obal#balancear"));
         assertTrue(lineage.getEdges().contains("d:oprep->d:odiv#dividir"));
     }

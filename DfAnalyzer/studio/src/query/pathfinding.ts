@@ -2,11 +2,9 @@ import type { GraphResponse } from '../api/catalog';
 
 /** Caminho de derivação entre dois datasets. */
 export interface DerivationPath {
-  /** Nós do caminho, na ordem, com id e tag. */
   steps: { id: string; tag: string; kind: 'TRANSFORMATION' | 'DATASET' }[];
-  /** Quantas transformações há entre as pontas. */
   transformations: number;
-  /** True quando existe mais de um caminho mínimo entre as pontas. */
+  /** Há mais de um caminho mínimo entre as pontas. */
   ambiguous: boolean;
 }
 
@@ -24,12 +22,11 @@ export function findDerivationPath(
     out.get(edge.source)!.push(edge.target);
   }
 
-  // Na visão de transformações, um dataset intermediário é ARESTA, não nó — o ponto de partida pode ser tanto o nó `d:` (borda do fluxo) quanto a transformação que o produz.
+  // O ponto de partida pode ser o nó `d:` ou a transformação que produz o dataset.
   const starts = entryPoints(graph, fromTag, 'source');
   const goals = new Set(entryPoints(graph, toTag, 'target'));
   if (starts.length === 0 || goals.size === 0) return null;
 
-  // Distancia a partir de qualquer ponto de entrada.
   const distance = new Map<string, number>();
   const previous = new Map<string, string>();
   const queue: string[] = [];
@@ -58,7 +55,7 @@ export function findDerivationPath(
   }
   if (closest === null) return null;
 
-  // Ambiguidade: mais de um predecessor a distancia best-1 chega a um destino no mesmo numero de passos.
+  // Ambíguo quando mais de um predecessor está à distância best-1.
   let alternatives = 0;
   for (const edge of graph.edges) {
     if (!goals.has(edge.target)) continue;
@@ -84,7 +81,6 @@ export function findDerivationPath(
   };
 }
 
-/** Onde a busca entra (ou termina) para um dataset. */
 function entryPoints(graph: GraphResponse, tag: string, role: 'source' | 'target'): string[] {
   const asNode = graph.nodes.find((node) => node.kind === 'DATASET' && node.tag === tag);
   if (asNode) return [asNode.id];

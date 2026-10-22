@@ -23,7 +23,6 @@ public class QPHandler {
         //load dataflow from provenance database
         QuerySpecification spec = new QuerySpecification(dataflowTag, dataflowID, message);
         Dataflow dataflow = db.loadDataflow(spec);
-        // Validate every user-supplied fragment against the catalog just loaded.
         QueryGuard.enforce(spec, dataflow);
         //generate query
         QueryProcessor qp = new QueryProcessor(db, dataflow);

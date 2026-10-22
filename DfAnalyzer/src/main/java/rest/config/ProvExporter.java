@@ -14,7 +14,7 @@ import qp.dataflow.Dependency;
 import qp.dataflow.Transformation;
 
 /**
- * Exporta a proveniencia prospectiva em PROV-JSON, o formato de serializacao do W3C PROV-DM.
+ * Exporta a proveniência prospectiva em PROV-JSON (W3C PROV-DM).
  *
  * @author joao
  */

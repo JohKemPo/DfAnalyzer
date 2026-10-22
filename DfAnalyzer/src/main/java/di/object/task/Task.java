@@ -18,9 +18,7 @@ public class Task extends DataflowObject {
     public String resource = "";
     public String workspace = "";
     public String status = "";
-    /**
-     * Vazia quando o cliente e antigo e nao envia o campo; nesse caso o insertTask reaproveita a execucao mais recente da versao.
-     */
+    /** Vazia em clientes antigos; o insertTask usa então a execução mais recente da versão. */
     public String executionTag = "";
     public String output = "";
     public String error = "";

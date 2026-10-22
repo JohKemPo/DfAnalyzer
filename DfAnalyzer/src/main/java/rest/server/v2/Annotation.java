@@ -1,7 +1,7 @@
 package rest.server.v2;
 
 /**
- * Uma anotação do pesquisador ancorada num nó do grafo.
+ * Anotação ancorada num nó do grafo.
  *
  * @author joao
  */

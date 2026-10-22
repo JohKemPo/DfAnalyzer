@@ -74,14 +74,11 @@ public class DbConnection {
                 .toString();
     }
 
-    /**
-     * Carrega o dataflow por tag e versao, sem precisar de uma QuerySpecification -- o grafo precisa do catalogo, nao de uma consulta.
-     */
+    /** Carrega o dataflow por tag e versão, sem QuerySpecification. */
     public Dataflow loadDataflow(String dataflowTag, int version) {
         return loadDataflow(new QuerySpecification(dataflowTag, version, ""));
     }
 
-    /** Resolve id -> tag. */
     public String getDataflowTag(int dataflowId) {
         try (PreparedStatement st = connection.prepareStatement(
                 "SELECT tag FROM dataflow WHERE id = ?;")) {
@@ -95,7 +92,7 @@ public class DbConnection {
         }
     }
 
-    /** Maior versao registrada para o dataflow, ou null se nao houver nenhuma. */
+    /** Maior versão registrada do dataflow, ou null. */
     public Integer getLatestVersion(int dataflowId) {
         try (PreparedStatement st = connection.prepareStatement(
                 "SELECT MAX(version) FROM dataflow_version WHERE df_id = ?;")) {
@@ -116,21 +113,19 @@ public class DbConnection {
     public Dataflow loadDataflow(QuerySpecification querySpec) {
         Dataflow dataflow = getDataflow(querySpec.getDataflowTag(), querySpec.getDataflowVersion());
         if (dataflow == null) {
-            // Unknown tag/version: return null so the caller can answer 400 instead of an NPE.
+            // Null permite ao chamador responder 400.
             return null;
         }
         dataflow.addTransformations(getTransformations(dataflow.getId(), dataflow.getVersion()));
         dataflow.addDatasets(getDatasets(dataflow.getId(), dataflow.getVersion()));
         // dataflow.addPrograms(getPrograms(dataflow.getId(), dataflow.getVersion()));
 
-        // Antes, este laco fazia quatro consultas POR DATASET.
         loadExtractors(dataflow);
         loadAttributes(dataflow);
         loadDependencies(dataflow);
         return dataflow;
     }
 
-    /** Indexa os datasets do dataflow por id, para distribuir os lotes abaixo. */
     private static Map<Integer, Dataset> datasetsById(Dataflow dataflow) {
         Map<Integer, Dataset> byId = new LinkedHashMap<>();
         for (Dataset dataset : dataflow.getDatasets()) {
@@ -185,7 +180,6 @@ public class DbConnection {
                     }
                     Attribute attribute = new Attribute();
                     attribute.setId(rs.getInt(2));
-                    // O extrator ja foi carregado por loadExtractors, que roda antes.
                     attribute.setExtractor(dataset.getExtractor(rs.getInt(3)));
                     attribute.setName(rs.getString(4));
                     attribute.setAttributeType(rs.getString(5));

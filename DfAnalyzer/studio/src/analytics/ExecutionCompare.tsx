@@ -3,9 +3,7 @@ import type { ExecutionSummary, ExecutionTimeline } from '../api/catalog';
 import { formatCount, formatPercentDelta, formatSeconds } from './format';
 import { MONO } from '../theme/tokens';
 
-/**
- * Comparação de duas execuções, no nível que o esquema sustenta hoje: contadores e duração, por execução e por transformação.
- */
+/** Compara contadores e duração de duas execuções, no total e por transformação. */
 export function ExecutionCompare({
   a,
   b,
@@ -29,7 +27,6 @@ export function ExecutionCompare({
   const transformations = mergeTransformations(timelineA, timelineB);
 
   return (
-    // minWidth:0 é o que falta em todo item flex para ele poder ENCOLHER abaixo do tamanho do próprio conteúdo -- sem isso, overflowX:auto na tabela nunca entra em ação e o card empurra a página inteira pra fora.
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25, minWidth: 0 }}>
       <Table
         head={['MÉTRICA', `#${a.id} · ${a.tag}`, `#${b.id} · ${b.tag}`, 'Δ']}
@@ -88,7 +85,6 @@ function mergeTransformations(a: ExecutionTimeline | undefined, b: ExecutionTime
 function Table({ head, rows, mono }: { head: string[]; rows: string[][]; mono?: boolean }) {
   const { studio } = useTheme();
   return (
-    // Conteúdo largo (tags de transformação, resumos numéricos) rola aqui dentro em vez de forçar a página inteira a rolar na horizontal.
     <Box sx={{ overflowX: 'auto', minWidth: 0 }}>
       <Box component="table" sx={{ width: '100%', minWidth: 420, borderCollapse: 'collapse', fontSize: 12.5 }}>
       <Box component="thead">

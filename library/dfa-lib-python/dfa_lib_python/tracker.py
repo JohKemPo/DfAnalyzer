@@ -31,7 +31,7 @@ class TaskTracker(object):
         self._thread_lock = threading.Lock()
         self._owner_pid = os.getpid()
         self._owned_paths = set()
-        # Processos filhos criados por `spawn` reimportam a biblioteca: sem isto cada um abriria uma execucao propria (ver execution.py)
+        # Processos criados por `spawn` reimportam a biblioteca e abririam outra execução.
         os.environ.setdefault("DFA_EXECUTION_TAG", get_execution_tag())
         atexit.register(self._cleanup)
 
@@ -62,7 +62,7 @@ class TaskTracker(object):
                     self._owned_paths.add(path)
                     handle.write(json.dumps({"dataflow": self._dataflow_tag}) + "\n")
                     handle.flush()
-                    # Com a trava na mao: ninguem envia task antes da definicao existir.
+                    # Com a trava, nenhuma task é enviada antes da definição.
                     self._dataflow.save()
                 entries = [json.loads(line) for line in lines]
                 yield [e for e in entries if "tag" in e], handle
@@ -138,7 +138,7 @@ def _select_producers(entries, producer, last_mine, context):
 
 
 def _dependency_records(ids):
-    """Formato que o servidor le: cada registro e uma string "a,b,..." com um identificador por tag, na ordem das tags (JSONReader/TaskProvenance)."""
+    """Cada registro é uma string "a,b,..." com um identificador por tag, na ordem das tags."""
     width = max(len(column) for column in ids)
     return [
         ",".join(str(column[min(row, len(column) - 1)]) for column in ids)

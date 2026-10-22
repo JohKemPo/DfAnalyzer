@@ -2,7 +2,6 @@ import { describe, expect, it } from 'vitest';
 import type { GraphEdge, GraphNode } from '../api/catalog';
 import { collapseGraph, isGroup, MIN_GROUP_SIZE } from './collapse';
 
-/** O agrupamento decide o que a pessoa vê. */
 
 function tf(tag: string): GraphNode {
   return { id: `t:${tag}`, tag, kind: 'TRANSFORMATION', role: null, attributes: null, tasks: null };
@@ -98,7 +97,6 @@ describe('cadeia linear', () => {
     const result = collapseGraph(nodes, edges);
     const groups = result.nodes.filter(isGroup);
 
-    // A -> [b c d] -> e.
     expect(groups).toHaveLength(1);
     expect(groups[0].tag).toBe('3 etapas em sequência');
     expect(groups[0].group.memberIds).toEqual([chain[1].id, chain[2].id, chain[3].id]);

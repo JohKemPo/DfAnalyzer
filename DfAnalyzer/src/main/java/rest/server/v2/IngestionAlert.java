@@ -1,7 +1,7 @@
 package rest.server.v2;
 
 /**
- * One execution with tasks in trouble, inside IngestionHealth.
+ * Execução com tasks em RUNNING ou com erro.
  *
  * @author joao
  */

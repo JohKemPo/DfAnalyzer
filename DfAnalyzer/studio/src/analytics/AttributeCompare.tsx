@@ -14,12 +14,10 @@ interface DatasetOption {
   attributes: { name: string; type: string | null }[];
 }
 
-/** Linhas por execução — o bastante para um resumo, sem puxar a tabela toda. */
+/** Linhas lidas por execução. */
 const SNAPSHOT_SIZE = 200;
 
-/**
- * Comparar linha a linha não tem correspondência clara sem uma chave de negócio que o esquema não declara, então a comparação é por resumo agregado (mín/média/máx para NUMERIC, valor mais comum e contagem de distintos para o resto) — real, generalizável, sem inventar um pareamento de linhas que não existe.
- */
+/** Compara atributos por resumo agregado, porque o esquema não tem chave para parear linhas. */
 export function AttributeCompare({
   dataflowId,
   datasets,
@@ -55,7 +53,6 @@ export function AttributeCompare({
   }
 
   return (
-    // minWidth:0 -- sem isto o item flex nao encolhe e overflowX:auto na tabela abaixo nunca entra em acao (ver a mesma nota em ExecutionCompare)
     <Box sx={{ minWidth: 0 }}>
       <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.25 }}>
         <Box sx={{ fontSize: 11.5, color: studio.muted }}>Dataset</Box>
@@ -107,7 +104,7 @@ function buildRequest(
 ): QueryRequest | null {
   if (!dataset || dataset.attributes.length === 0) return null;
   return {
-    // Sem isto o backend resolve a versao mais recente do dataflow, que so por acaso costuma coincidir com a da execucao escolhida -- em dataflow com mais de uma versao (ex.: apos rodar o mesmo script de novo), a consulta rejeita com 400 "execucao nao pertence a versao"
+    // Sem a versão, o backend usa a mais recente e recusa execução de outra versão.
     version,
     mapping: 'LOGICAL',
     sources: [dataset.tag],
@@ -133,7 +130,6 @@ function AttributeTable({
   }));
 
   return (
-    // Conteúdo largo (nomes de atributo, resumos agregados) rola aqui dentro em vez de forçar a página inteira a rolar na horizontal.
     <Box sx={{ overflowX: 'auto', minWidth: 0 }}>
       <Box component="table" sx={{ width: '100%', minWidth: 420, borderCollapse: 'collapse', fontSize: 12.5 }}>
       <Box component="thead">

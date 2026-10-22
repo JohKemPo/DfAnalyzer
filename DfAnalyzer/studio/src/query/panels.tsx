@@ -3,7 +3,7 @@ import type { ChangeEvent, ReactNode } from 'react';
 import { MONO } from '../theme/tokens';
 
 
-/** `.side` — painel lateral de 302 px com as escolhas da consulta. */
+/** Painel lateral com as escolhas da consulta. */
 export function SidePanel({ children }: { children: ReactNode }) {
   const { studio } = useTheme();
   return (
@@ -24,7 +24,6 @@ export function SidePanel({ children }: { children: ReactNode }) {
   );
 }
 
-/** `.side .sec` — uma seção do painel, separada por linha. */
 export function Section({ label, children }: { label: string; children: ReactNode }) {
   const { studio } = useTheme();
   return (
@@ -52,7 +51,6 @@ export function Section({ label, children }: { label: string; children: ReactNod
   );
 }
 
-/** `.cb` + `.box` — item de projeção com caixa de seleção. */
 export function CheckItem({
   label,
   checked,
@@ -119,7 +117,6 @@ export function CheckItem({
   );
 }
 
-/** `.mini` — pill de 28 px usada nas condições. */
 export function MiniPill({
   children,
   as,
@@ -183,7 +180,6 @@ export function MiniPill({
   return <Box sx={base}>{children}</Box>;
 }
 
-/** `.tabs2` — abas com sublinhado. */
 export function UnderlineTabs<T extends string>({
   value,
   onChange,
@@ -240,7 +236,7 @@ export function SqlBlock({ sql }: { sql: string }) {
     }
     const parts: ReactNode[] = [];
     let cursor = 0;
-    // Ordem importa: literais primeiro, para não pintar palavra dentro de string.
+    // Literais primeiro, para não destacar palavra dentro de string.
     const pattern = new RegExp(`'[^']*'|\\b\\d+(?:\\.\\d+)?\\b|${KEYWORDS.source}`, 'g');
     let match: RegExpExecArray | null;
     while ((match = pattern.exec(line)) !== null) {

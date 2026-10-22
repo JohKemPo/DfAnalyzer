@@ -7,16 +7,14 @@ import { isGroup } from './collapse';
 import { MONO } from '../theme/tokens';
 import { DataflowsIcon, GraphIcon } from '../layout/icons';
 
-/**
- * Nó customizado do grafo — a razão de ter trocado vis.js por React Flow: aqui o nó é um componente React, então badges, contagens e estados de seleção saem de graça.
- */
+/** Nó do grafo de proveniência. */
 export interface ProvenanceNodeData extends Record<string, unknown> {
   node: CollapsibleNode;
   selected: boolean;
   inLineage: boolean;
   dimmed: boolean;
   lineageSide: 'upstream' | 'downstream' | 'focus' | null;
-  /** Task `RUNNING` agora nesta transformação, na execução mais recente. */
+  /** Há task em RUNNING nesta transformação. */
   running: boolean;
 }
 
@@ -31,7 +29,7 @@ function ProvenanceNodeImpl({ data }: NodeProps) {
   const isTransformation = node.kind === 'TRANSFORMATION';
   const grouped = isGroup(node);
 
-  // A cor é do TIPO do nó, não da posição dele na lista: um filtro que muda a quantidade de nós nunca deve repintar os que sobraram.
+  // A cor vem do tipo do nó, não da posição na lista.
   const accent = isTransformation
     ? studio.blue
     : node.role === 'SOURCE'
@@ -50,7 +48,6 @@ function ProvenanceNodeImpl({ data }: NodeProps) {
 
   const attributeCount = node.attributes?.length ?? 0;
 
-  // Um grupo e desenhado com borda tracejada e uma pilha atras: o formato ja avisa que ali tem mais de uma coisa, antes de ler o rotulo.
   const subtitle = grouped
     ? node.group.sampleTags.join(', ') +
       (node.group.memberIds.length > node.group.sampleTags.length ? '…' : '')
@@ -78,7 +75,6 @@ function ProvenanceNodeImpl({ data }: NodeProps) {
         boxShadow: selected ? studio.shadow : 'none',
         opacity: dimmed ? 0.28 : 1,
         transition: 'opacity .15s, border-color .15s, background-color .15s',
-        // A "pilha" atrás do grupo.
         ...(grouped && {
           position: 'relative',
           '&::before': {

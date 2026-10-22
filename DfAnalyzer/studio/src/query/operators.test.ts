@@ -1,9 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { conditionToExpression, conditionsToSelections, operatorsFor, type Condition } from './operators';
 
-/**
- * A montagem da expressão é o ponto onde texto digitado por uma pessoa vira parte de uma consulta.
- */
 
 function op(sql: string, type: Parameters<typeof operatorsFor>[0] = 'TEXT') {
   const found = operatorsFor(type).find((candidate) => candidate.sql === sql);
@@ -17,7 +14,7 @@ function cond(partial: Partial<Condition> & Pick<Condition, 'column' | 'operator
 
 describe('operadores por tipo', () => {
   it('não oferece comparação de magnitude para texto', () => {
-    // '>' em TEXT compara lexicograficamente: roda, parece certo, e não é.
+    // '>' em TEXT compara lexicograficamente.
     const sqls = operatorsFor('TEXT').map((o) => o.sql);
     expect(sqls).not.toContain('>');
     expect(sqls).not.toContain('BETWEEN');

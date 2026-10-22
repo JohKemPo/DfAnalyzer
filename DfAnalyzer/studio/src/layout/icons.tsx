@@ -1,6 +1,5 @@
 import type { SVGProps } from 'react';
 
-/** The rail and header icons. */
 type IconProps = SVGProps<SVGSVGElement> & { size?: number };
 
 function Icon({ size = 20, children, ...rest }: IconProps) {

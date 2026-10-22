@@ -1,6 +1,4 @@
-/**
- * `blue` / `aqua` / `orange` are the categorical hues used to distinguish node kinds in the provenance graph; the status ramp is reserved for state and is never reused as a fourth series.
- */
+/** `blue`, `aqua` e `orange` distinguem tipos de nó; as cores de estado não viram série. */
 export interface StudioPalette {
   page: string;
   surface: string;

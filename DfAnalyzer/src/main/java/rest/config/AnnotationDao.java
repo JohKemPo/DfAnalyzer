@@ -15,7 +15,7 @@ import org.sql2o.data.Table;
 import rest.server.v2.Annotation;
 
 /**
- * Leitura e escrita das anotações do pesquisador.
+ * Leitura e escrita das anotações.
  *
  * @author joao
  */
@@ -53,7 +53,7 @@ public class AnnotationDao {
     public Annotation create(int dataflowId, String target, String body, String author) {
         String createdAt = new SimpleDateFormat(TIMESTAMP).format(new Date());
         try (Connection con = sql2o.open()) {
-            // A sequencia e do proprio esquema; ler o proximo valor antes de inserir evita depender de chaves geradas, que o driver do MonetDB nao expoe de forma confiavel.
+            // O driver do MonetDB não devolve chaves geradas de forma confiável.
             Table next = con.createQuery(
                     "SELECT NEXT VALUE FOR \"annotation_id_seq\" AS id;")
                     .executeAndFetchTable();

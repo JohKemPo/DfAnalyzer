@@ -24,7 +24,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 /**
- * O filtro por execução sem ir ao banco: a mesma topologia de GraphServiceTest, exercitando só a metade pura de QueryService -- resolveExecutionAnchor e buildExecutionSelection.
+ * Filtro por execução sem banco, sobre a topologia de GraphServiceTest.
  *
  * @author joao
  */
@@ -58,7 +58,7 @@ public class QueryServiceExecutionFilterTest {
                 new Dependency(balancear, oBal, null)));
     }
 
-    // ------------------------------------------------------------- ancora
+    // ------------------------------------------------------------- âncora
 
     @Test
     public void picksTheProducingTransformationWhenThereIsOne() {
@@ -71,7 +71,7 @@ public class QueryServiceExecutionFilterTest {
 
     @Test
     public void fallsBackToTheConsumingTransformationForASourceDataset() {
-        // Iprep nao tem produtora -- e' entrada do fluxo.
+        // iprep é entrada do fluxo, sem produtora.
         Anchor anchor = QueryService.resolveExecutionAnchor(
                 dataflow, Collections.singletonList("iprep.arquivo"));
 
@@ -107,7 +107,7 @@ public class QueryServiceExecutionFilterTest {
                         dataflow, Collections.singletonList("naoexiste.coluna")));
     }
 
-    // --------------------------------------------------------- selecao
+    // --------------------------------------------------------- seleção
 
     @Test
     public void buildsAnInListFromTheResolvedTaskIds() {
@@ -138,7 +138,6 @@ public class QueryServiceExecutionFilterTest {
                 Collections.singletonList("oprep.texto"),
                 Collections.singletonList(selection));
 
-        // Nao deve lancar QueryValidationException -- e' o ponto do teste.
         QueryGuard.enforce(spec, dataflow);
 
         assertTrue(spec.getSelections().iterator().next()
@@ -160,7 +159,7 @@ public class QueryServiceExecutionFilterTest {
         QueryGuard.enforce(spec, dataflow);
     }
 
-    // ----------------------------------------------------------- helpers
+    // ----------------------------------------------------------- auxiliares
 
     private static void assertBadRequest(Runnable action) {
         try {

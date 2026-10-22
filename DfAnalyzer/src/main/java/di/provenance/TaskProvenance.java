@@ -73,7 +73,6 @@ public class TaskProvenance {
                 if (df != null && task.transformationTag != null) {
                     return storeTask(db, task, df, t.getDBMS());
                 } else {
-                    // Chegar aqui significa perder a task.
                     throw new IllegalStateException("task descartada: dataflow '"
                             + task.dataflowTag + "' nao pode ser resolvido"
                             + (task.transformationTag == null
@@ -90,7 +89,7 @@ public class TaskProvenance {
             Statement st = db.createStatement();
             ResultSet rs;
             if (dbms.equals(DBMS.MEMSQL)) {
-                // O deploy real usa MONETDB; escrever aqui codigo nao exercitado seria pior que declarar a lacuna.
+                // MemSQL não grava a execução da task.
                 rs = insertTask(db, t.ID, t.dataflowTag, t.transformationTag, t.status, t.workspace, t.resource, t.output, t.error);
             } else {
                 rs = st.executeQuery(
@@ -144,9 +143,7 @@ public class TaskProvenance {
         return t.ID;
     }
 
-    /**
-     * Uma task produtora e procurada DENTRO do dataflow, da versao e da execucao da task consumidora - c e a consumidora, ja gravada.
-     */
+    /** Procura a produtora no mesmo dataflow, versão e execução da consumidora. */
     static final String DEPENDENCY_TASK_SQL =
             "SELECT p.id FROM task p, data_transformation dt, task c "
             + "WHERE c.id = ? AND p.dt_id = dt.id AND dt.tag = ? AND p.identifier = ? "
@@ -235,7 +232,7 @@ public class TaskProvenance {
                 } else {
                     sb = new StringBuilder();
 
-                    // Os campos de texto vem do cliente (JSON da task) - escapados pelo mesmo sqlLiteral do insert da task, senao uma aspa em `description` quebrava o SQL (ou injetava, ver insertElements).
+                    // Texto vindo do cliente.
                     sb.append("SELECT insertPerformance(").append(t.ID).append(",").append(t.subID).append(",'")
                             .append(sqlLiteral(p.method)).append("','").append(sqlLiteral(p.description)).append("','")
                             .append(sqlLiteral(p.startTime)).append("','").append(sqlLiteral(p.endTime)).append("','")
@@ -272,7 +269,7 @@ public class TaskProvenance {
         }
     }
 
-    /** Linhas por executeBatch - so para nao acumular um lote gigante em memoria. */
+    /** Linhas por executeBatch. */
     private static final int INSERT_BATCH_SIZE = 500;
 
     /** Grava os elementos de um set como linhas da tabela `ds_<tag>`. */
@@ -309,7 +306,7 @@ public class TaskProvenance {
         try (PreparedStatement stmt = db.prepareStatement(sql)) {
             int pending = 0;
             for (Object[] row : rows) {
-                // Posicao 1 e o <transformacao>_task_id; as demais seguem tableColumns.
+                // Posição 1 é o <transformacao>_task_id; as demais seguem tableColumns.
                 stmt.setInt(1, (Integer) row[0]);
                 for (int i = 0; i < tableColumns.size(); i++) {
                     bindValue(stmt, i + 2, tableColumns.get(i).type, row[i + 1]);
@@ -329,9 +326,7 @@ public class TaskProvenance {
         }
     }
 
-    /**
-     * `INSERT INTO "<tabela>"(<task_col>,<c1>,...) VALUES (?,?,...)` - so identificadores no texto, nenhum valor.
-     */
+    /** Só identificadores no texto do SQL; os valores vão como parâmetros. */
     static String buildInsertSQL(String tableName, String taskColumn, List<String> columns, DBMS dbms) {
         StringBuilder sql = new StringBuilder("INSERT INTO ");
         if (dbms.equals(DBMS.MEMSQL)) {
@@ -354,9 +349,7 @@ public class TaskProvenance {
     static final int TEXT_MAX_LENGTH = 500;
     static final int FILE_MAX_LENGTH = 300;
 
-    /**
-     * Converte o valor textual que chega do cliente para o tipo da coluna: String para TEXT/FILE/LONG_TEXT, Double para NUMERIC.
-     */
+    /** Converte o texto do cliente para o tipo da coluna. */
     static Object toJdbcValue(AttributeType type, String raw) {
         if (raw != null && type == AttributeType.TEXT && raw.length() > TEXT_MAX_LENGTH) {
             return null;
@@ -623,7 +616,7 @@ public class TaskProvenance {
         }
     }
 
-    /** Dobra aspas simples para que o valor sobreviva como literal SQL. */
+    /** Dobra aspas simples para uso como literal SQL. */
     private static String sqlLiteral(String value) {
         return value == null ? "" : value.replace("'", "''");
     }

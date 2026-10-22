@@ -1,5 +1,5 @@
 #!/bin/sh
-# Migracoes do esquema para um banco JA EXISTENTE (o volume monetdb_data sobrevive ao rebuild da imagem; database-script.sql so roda num banco novo).
+# Migrações para bancos já existentes; database-script.sql só roda num banco novo.
 DB=dataflow_analyzer
 PORT=50000
 
@@ -9,7 +9,7 @@ has_column() {
   [ "$(q "SELECT COUNT(*) FROM sys.columns c JOIN sys.tables t ON t.id = c.table_id WHERE t.name = '$1' AND c.name = '$2';")" = "1" ]
 }
 
-add_column() {  # Tabela coluna tipo.
+add_column() {  # tabela coluna tipo
   if has_column "$1" "$2"; then
     echo "[migracao] $1.$2 ja existe"
     return 0

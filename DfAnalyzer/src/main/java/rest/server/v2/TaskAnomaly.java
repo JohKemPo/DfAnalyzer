@@ -1,16 +1,16 @@
 package rest.server.v2;
 
 /**
- * A task in one execution that did not finish cleanly.
+ * Task que não terminou em FINISHED.
  *
  * @author joao
  */
 public class TaskAnomaly {
 
     public enum Status {
-        /** Still RUNNING — either genuinely in flight, or stuck. */
+        /** Ainda em RUNNING: em andamento ou travada. */
         RUNNING,
-        /** Reached FINISHED_WITH_ERROR; errorMessage usually says why. */
+        /** Em FINISHED_WITH_ERROR. */
         FINISHED_WITH_ERROR
     }
 

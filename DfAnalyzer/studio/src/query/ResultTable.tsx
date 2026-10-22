@@ -4,7 +4,6 @@ import { useMemo } from 'react';
 import type { QueryResult } from '../api/catalog';
 import { MONO } from '../theme/tokens';
 
-/** Tabela de resultados. */
 export function ResultTable({ result }: { result: QueryResult }) {
   const { studio } = useTheme();
 
@@ -16,7 +15,6 @@ export function ResultTable({ result }: { result: QueryResult }) {
         description: column.type ? `${column.name} · ${column.type}` : column.name,
         flex: 1,
         minWidth: 150,
-        // NUMERIC alinha à direita: é assim que se compara números de relance.
         type: column.type === 'NUMERIC' ? ('number' as const) : ('string' as const),
         renderCell: (params) =>
           params.value === null || params.value === undefined ? (

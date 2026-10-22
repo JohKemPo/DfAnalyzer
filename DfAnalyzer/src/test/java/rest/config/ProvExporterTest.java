@@ -78,7 +78,7 @@ public class ProvExporterTest {
 
     @Test
     public void theIntermediateDatasetAppearsInBothRelations() {
-        // Oprep é saída de 'preparar' E entrada de 'dividir'.
+        // oprep é saída de 'preparar' e entrada de 'dividir'.
         assertTrue(section("wasGeneratedBy").containsKey("dfa:gen_preparar_oprep"));
         assertTrue(section("used").containsKey("dfa:used_dividir_oprep"));
     }
@@ -104,7 +104,7 @@ public class ProvExporterTest {
 
     @Test
     public void anInputWithNoProducerIsNotGeneratedByAnything() {
-        // Iprep entra no fluxo sem ser produzido: só pode ser 'used'
+        // iprep não é produzido, só usado.
         assertTrue(section("used").containsKey("dfa:used_preparar_iprep"));
         for (String key : section("wasGeneratedBy").keySet()) {
             assertTrue("entrada do fluxo nao pode ter sido gerada",

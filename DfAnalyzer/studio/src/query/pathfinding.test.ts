@@ -2,9 +2,6 @@ import { describe, expect, it } from 'vitest';
 import type { GraphResponse } from '../api/catalog';
 import { findDerivationPath } from './pathfinding';
 
-/**
- * O caminho de derivação é o que dá contexto ao resultado da consulta: sem ele, duas tabelas distantes viram números sem explicação.
- */
 
 /** Iprep → [preparar] → oprep → [dividir] → odiv → [balancear] → obal. */
 const cadeia: GraphResponse = {
@@ -38,7 +35,7 @@ describe('caminho de derivação', () => {
   });
 
   it('parte de um dataset intermediário, que é aresta e não nó', () => {
-    // Oprep não é nó na visão de transformações: entra pela transformação que o consome.
+    // Na visão de transformações, oprep entra pela transformação que o consome.
     const path = findDerivationPath(cadeia, 'oprep', 'obal')!;
     expect(path.steps.map((s) => s.tag)).toEqual(['dividir', 'balancear', 'obal']);
   });

@@ -3,7 +3,7 @@ package rest.server.v2;
 import java.util.List;
 
 /**
- * Payload of GET /api/v2/dataflows/{id}/executions/{execId}/timeline — one bar per transformation, plus the tasks that didn't finish clean.
+ * Linha do tempo de uma execução: uma barra por transformação e as tasks com problema.
  *
  * @author joao
  */

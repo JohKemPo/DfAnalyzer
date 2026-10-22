@@ -6,9 +6,7 @@ import { MONO } from '../theme/tokens';
 const LABEL_WIDTH = 132;
 const VALUE_WIDTH = 60;
 
-/**
- * Um Gantt simples: uma barra por transformação, deslocada do início da própria execução — não do relógio.
- */
+/** Uma barra por transformação, a partir do início da execução. */
 export function Timeline({ rows }: { rows: TimelineRow[] }) {
   const { studio } = useTheme();
 
@@ -105,7 +103,7 @@ export function Timeline({ rows }: { rows: TimelineRow[] }) {
   );
 }
 
-/** ~5 marcas redondas, nunca em zero linhas nem centenas delas. */
+/** Cerca de cinco marcas redondas no eixo. */
 function buildTicks(span: number): number[] {
   const step = niceStep(span / 5);
   const ticks: number[] = [];

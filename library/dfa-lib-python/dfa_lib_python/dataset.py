@@ -3,7 +3,7 @@ import warnings
 from .ProvenanceObject import ProvenanceObject
 from .element import Element
 
-# Maior coluna textual que o backend cria para um atributo deste cliente: TEXT vira VARCHAR(500) e FILE vira VARCHAR(300) (DataflowProvenance.java); NUMERIC e numero.
+# Tamanho das colunas de texto criadas pelo backend (DataflowProvenance.java).
 MAX_VALUE_LENGTH = 500
 
 

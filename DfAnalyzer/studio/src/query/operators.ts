@@ -1,14 +1,9 @@
 import type { AttributeInfo } from '../api/catalog';
 
-/** Quais operadores fazem sentido para cada tipo de atributo. */
 export interface Operator {
-  /** Como aparece na interface. */
   label: string;
-  /** Como entra na gramática de `selections` do backend. */
   sql: string;
-  /** Quantos valores o operador consome. */
   operands: 0 | 1 | 2;
-  /** Se o valor deve ir entre aspas simples na expressão. */
   quoted: boolean;
 }
 
@@ -43,7 +38,6 @@ export function operatorsFor(type: AttributeInfo['type']): Operator[] {
         ...PRESENCA,
       ];
     case 'FILE':
-      // Caminho de arquivo: comparar magnitude não quer dizer nada.
       return [...IGUALDADE, ...TEXTO, ...PRESENCA];
     default:
       return [...IGUALDADE, ...TEXTO, ...PRESENCA];
@@ -51,20 +45,19 @@ export function operatorsFor(type: AttributeInfo['type']): Operator[] {
 }
 
 export interface Condition {
-  /** Coluna qualificada, `dataset.atributo`. */
+  /** `dataset.atributo`. */
   column: string;
   operator: Operator;
   value: string;
-  /** Segundo valor, só para BETWEEN. */
+  /** Só para BETWEEN. */
   value2: string;
 }
 
-/** Escapa uma aspa simples dobrando-a, como a gramática do backend espera. */
+/** Dobra aspas simples, como a gramática do backend espera. */
 function quote(value: string): string {
   return `'${value.replace(/'/g, "''")}'`;
 }
 
-/** Monta a expressão que vai em `selections`. */
 export function conditionToExpression(condition: Condition): string | null {
   const { column, operator, value, value2 } = condition;
   if (!column) return null;
@@ -76,7 +69,6 @@ export function conditionToExpression(condition: Condition): string | null {
       return `${column} ${operator.sql}`;
     case 1: {
       if (!value.trim()) return null;
-      // 'contém' vira LIKE com curingas nas duas pontas.
       const operand = operator.sql === 'LIKE' ? quote(`%${value}%`) : wrap(value);
       return `${column} ${operator.sql} ${operand}`;
     }
@@ -87,7 +79,6 @@ export function conditionToExpression(condition: Condition): string | null {
   }
 }
 
-/** Todas as expressões completas, na ordem. */
 export function conditionsToSelections(conditions: Condition[]): string[] {
   return conditions
     .map(conditionToExpression)

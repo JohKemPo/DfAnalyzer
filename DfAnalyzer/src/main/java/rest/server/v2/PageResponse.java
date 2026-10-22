@@ -3,7 +3,7 @@ package rest.server.v2;
 import java.util.List;
 
 /**
- * Pagination envelope shared by every v2 collection endpoint.
+ * Envelope de paginação dos endpoints de coleção da v2.
  *
  * @author joao
  */

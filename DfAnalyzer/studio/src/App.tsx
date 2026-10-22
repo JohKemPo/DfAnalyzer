@@ -13,7 +13,7 @@ import { ColorModeProvider } from './theme/ColorModeContext';
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // Provenance is append-only: refetching on every window focus buys nothing.
+      // Proveniência só cresce; refazer a busca no foco da janela não ajuda.
       refetchOnWindowFocus: false,
       staleTime: 30_000,
       retry: 1,
@@ -21,7 +21,6 @@ const queryClient = new QueryClient({
   },
 });
 
-/** Qual dataflow está aberto no grafo. */
 type Section = 'graph' | 'query' | 'analytics' | 'gallery';
 
 interface Selection {
@@ -32,7 +31,7 @@ interface Selection {
   node: string | null;
 }
 
-/** O que está aberto vive na query string (`?df=2&tag=soma`), não só em memória. */
+/** O que está aberto fica na query string (`?df=2&tag=soma`). */
 function readSelection(): Selection | null {
   const params = new URLSearchParams(window.location.search);
   const id = Number(params.get('df'));
@@ -83,7 +82,6 @@ function Studio() {
   const [selection, setSelection] = useState<Selection | null>(readSelection);
   const [searchOpen, setSearchOpen] = useState(false);
 
-  // O botão "voltar" do navegador tem de desfazer a navegação, não sair da app.
   useEffect(() => {
     const onPopState = () => {
       setSelection(readSelection());
@@ -92,7 +90,6 @@ function Studio() {
     return () => window.removeEventListener('popstate', onPopState);
   }, []);
 
-  // Ctrl/Cmd+K abre a busca global de qualquer tela.
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
@@ -109,7 +106,7 @@ function Studio() {
     setSelection(next);
   };
 
-  // Trocar de visão ou de nó em foco reescreve a URL: o endereço da barra é sempre o que está na tela, e por isso pode ser colado para alguém.
+  // A URL acompanha a visão e o nó em foco, para poder ser compartilhada.
   const updateSelection = (patch: Partial<Selection>) => {
     setSelection((current) => {
       if (!current) return current;

@@ -5,7 +5,7 @@ import static org.junit.Assert.assertNull;
 
 import org.junit.Test;
 
-/** Origem do mapeamento: vocabulario fechado, e ausencia nunca vira um valor presumido. */
+/** A origem do mapeamento aceita só o vocabulário fechado, e a ausência não vira valor presumido. */
 public class JSONReaderOriginTest {
 
     @Test
@@ -17,7 +17,6 @@ public class JSONReaderOriginTest {
 
     @Test
     public void absentOriginStaysAbsent() {
-        // Nao declarado nao e "manual"
         assertNull(JSONReader.normalizeOrigin(null));
         assertNull(JSONReader.normalizeOrigin(""));
     }

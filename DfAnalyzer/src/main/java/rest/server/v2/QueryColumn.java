@@ -1,7 +1,7 @@
 package rest.server.v2;
 
 /**
- * Uma coluna do resultado, com o tipo que o catalogo declara para ela.
+ * Coluna do resultado, com o tipo declarado no catálogo.
  *
  * @author joao
  */

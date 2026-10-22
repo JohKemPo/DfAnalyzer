@@ -1,4 +1,4 @@
-/** Thin fetch wrapper for the DfAnalyzer REST API. */
+/** Cliente HTTP da API REST do DfAnalyzer. */
 export class ApiError extends Error {
   constructor(
     readonly status: number,
@@ -31,7 +31,6 @@ async function safeText(response: Response): Promise<string> {
   }
 }
 
-/** Envia um corpo JSON e devolve a resposta desserializada. */
 export async function apiSend<T>(
   method: 'POST' | 'PUT' | 'DELETE',
   path: string,
@@ -54,7 +53,7 @@ export async function apiSend<T>(
   return (text ? JSON.parse(text) : undefined) as T;
 }
 
-/** Prefere a `message` do envelope de erro v2; cai no texto cru se não houver. */
+/** Usa a `message` do erro v2, ou o texto cru. */
 async function errorMessage(response: Response): Promise<string> {
   const text = await safeText(response);
   if (!text) return response.statusText;

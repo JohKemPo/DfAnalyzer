@@ -40,7 +40,6 @@ def test_get_specification_pass():
 
 
 def test_sem_origem_o_json_nao_carrega_o_campo():
-    # Ausencia = "nao informado" no servidor; nunca um valor presumido.
     spec = Dataflow("teste").get_specification()
     assert "origin" not in spec and "generator" not in spec
 

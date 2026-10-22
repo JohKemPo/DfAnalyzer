@@ -1,13 +1,12 @@
 import type { GraphEdge, GraphNode } from '../api/catalog';
 
-/** Agrupamento por nível de detalhe. */
 
 /** Nó de grupo: mesma forma de um GraphNode, com os membros anexados. */
 export interface GroupNode extends GraphNode {
   group: {
     kind: 'LEAVES' | 'CHAIN';
     memberIds: string[];
-    /** Tags dos primeiros membros, para o rótulo não ser só um número. */
+    /** Tags dos primeiros membros, para o rótulo. */
     sampleTags: string[];
   };
 }
@@ -25,7 +24,7 @@ export interface CollapseResult {
   collapsedCount: number;
 }
 
-/** Abaixo disto, agrupar atrapalha mais do que ajuda. */
+/** Abaixo disto não se agrupa. */
 export const MIN_GROUP_SIZE = 3;
 
 interface Degrees {
@@ -53,7 +52,6 @@ export function collapseGraph(
   const { incoming, outgoing } = degrees(edges);
   const byId = new Map(nodes.map((node) => [node.id, node]));
 
-  /** Id do membro -> id do grupo que o absorveu. */
   const memberOf = new Map<string, string>();
   const groups: GroupNode[] = [];
 
@@ -84,7 +82,7 @@ export function collapseGraph(
     memberIds.forEach((memberId) => memberOf.set(memberId, id));
   };
 
-  // ── regra 1: folhas irmãs ──────────────────────────────────────────────────.
+  // Regra 1: folhas irmãs.
   const leavesByParent = new Map<string, string[]>();
   for (const node of nodes) {
     const out = outgoing.get(node.id) ?? [];
@@ -100,7 +98,7 @@ export function collapseGraph(
       `${members.length} ${members[0].kind === 'DATASET' ? 'saídas' : 'transformações'}`);
   }
 
-  // ── regra 2: cadeias lineares ─────────────────────────────────────────────.
+  // Regra 2: cadeias lineares.
   const isLinear = (id: string) =>
     (incoming.get(id) ?? []).length === 1 &&
     (outgoing.get(id) ?? []).length === 1 &&
@@ -132,7 +130,6 @@ export function collapseGraph(
     addGroup('CHAIN', chain, (members) => `${members.length} etapas em sequência`);
   }
 
-  // ── remonta nós e arestas ─────────────────────────────────────────────────.
   const resolve = (id: string) => memberOf.get(id) ?? id;
 
   const resultNodes: CollapsibleNode[] = [
@@ -145,7 +142,6 @@ export function collapseGraph(
   for (const edge of edges) {
     const source = resolve(edge.source);
     const target = resolve(edge.target);
-    // Aresta interna ao grupo: some junto com os membros.
     if (source === target) continue;
     const id = `${source}->${target}#${edge.label}`;
     if (seen.has(id)) continue;

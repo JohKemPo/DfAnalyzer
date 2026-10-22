@@ -13,9 +13,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-/**
- * Gravacao dos valores de um set (ds_<tag>): os valores tem de ir como parametros do PreparedStatement, nunca concatenados no SQL.
- */
+/** Os valores de um set vão como parâmetros do PreparedStatement, nunca concatenados no SQL. */
 public class TaskProvenanceInsertTest {
 
     @Test
@@ -47,7 +45,6 @@ public class TaskProvenanceInsertTest {
 
     @Test
     public void textValuesWithQuotesAndSqlArePassedThroughUntouched() {
-        // O valor que derrubava o INSERT antes - vai inteiro como parametro.
         String pythonListRepr = "['Eletrônicos', 'Vestuário']";
         String injection = "x'); DROP TABLE task; --";
 
@@ -83,7 +80,7 @@ public class TaskProvenanceInsertTest {
         assertEquals(fits, TaskProvenance.toJdbcValue(AttributeType.TEXT, fits));
         assertNull(TaskProvenance.toJdbcValue(AttributeType.TEXT, tooLong));
         assertNull(TaskProvenance.toJdbcValue(AttributeType.FILE, fileTooLong));
-        // LONG_TEXT e coluna TEXT sem limite.
+        // LONG_TEXT é coluna TEXT sem limite.
         assertEquals(tooLong, TaskProvenance.toJdbcValue(AttributeType.LONG_TEXT, tooLong));
     }
 
@@ -102,7 +99,7 @@ public class TaskProvenanceInsertTest {
         assertFalse(sql.contains("'"));
     }
 
-    /** A task produtora tem de ser procurada na versao E na execucao da consumidora. */
+    /** A produtora é procurada na versão e na execução da consumidora. */
     @Test
     public void dependencyLookupIsScopedToTheConsumersVersionAndExecution() {
         String sql = TaskProvenance.DEPENDENCY_TASK_SQL;

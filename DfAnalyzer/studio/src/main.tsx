@@ -1,6 +1,6 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-// Apenas o subconjunto latin: os demais (cirilico, grego, vietnamita) somavam ~40 arquivos de fonte sem uso nesta interface.
+// Só o subconjunto latin da fonte.
 import '@fontsource/ibm-plex-sans/latin-400.css';
 import '@fontsource/ibm-plex-sans/latin-500.css';
 import '@fontsource/ibm-plex-sans/latin-600.css';

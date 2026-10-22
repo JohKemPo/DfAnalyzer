@@ -3,7 +3,7 @@ package rest.server.v2;
 import java.util.List;
 
 /**
- * Payload of GET /api/v2/dataflows/{id}/ingestion-health, scoped to one dataflow.
+ * Saúde da ingestão de um dataflow.
  *
  * @author joao
  */

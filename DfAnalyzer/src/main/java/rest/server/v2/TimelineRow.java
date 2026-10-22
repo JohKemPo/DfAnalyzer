@@ -1,7 +1,7 @@
 package rest.server.v2;
 
 /**
- * One bar of the Gantt in GET /api/v2/dataflows/{id}/executions/{execId}/timeline — every task of one transformation, in one execution, folded into a single span.
+ * Uma barra da linha do tempo: as tasks de uma transformação numa execução.
  *
  * @author joao
  */

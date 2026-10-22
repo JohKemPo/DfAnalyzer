@@ -78,7 +78,7 @@ public class DataflowProvenance {
                 Integer setID = storeSet(db, dfID, transformations.get(s.transformation.tag),
                         depDtID, s, t.getDBMS());
                 if (setID == null) {
-                    // storeSet engole a excecao e devolve null; atribuir isso a um `int` estourava NullPointerException longe da causa real.
+                    // storeSet devolve null quando falha.
                     throw new IllegalStateException("nao foi possivel gravar o conjunto '"
                             + s.tag + "' da transformacao '" + s.transformation.tag
                             + "': veja o erro de SQL acima");
@@ -191,9 +191,7 @@ public class DataflowProvenance {
         return null;
     }
 
-    /**
-     * UPDATE separado, depois do insert, para nao mudar a assinatura de insertDataflowVersion (funcao SQL ja instalada nos bancos existentes).
-     */
+    /** UPDATE separado para não mudar a assinatura de insertDataflowVersion, já instalada nos bancos existentes. */
     private static void storeVersionOrigin(Connection db, Dataflow df) {
         if (df.origin == null && df.generator == null) {
             return;

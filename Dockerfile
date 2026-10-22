@@ -5,16 +5,16 @@ FROM --platform=linux/amd64 maven:3.8-eclipse-temurin-8 AS builder
 
 WORKDIR /build
 
-# Pom primeiro: as dependências viram uma camada em cache que só é refeita quando o próprio pom muda.
+# Pom primeiro, para as dependências ficarem em cache.
 COPY DfAnalyzer/pom.xml .
 RUN mvn -B -q dependency:go-offline || true
 
-# Fonte do DfA Studio: o mvn package compila o bundle Vite e o deposita em target/classes/static/studio, dentro do proprio jar.
+# O mvn package compila o Studio para dentro do jar.
 COPY DfAnalyzer/studio ./studio
 
 COPY DfAnalyzer/src ./src
 
-# Os testes rodam aqui de proposito: a suite de injecao de SQL e um portao de build — se ela regredir, a imagem nao e produzida.
+# Sem -DskipTests: se os testes falharem, a imagem não é gerada.
 RUN mvn -B package
 
 # =============================================================================
@@ -22,7 +22,7 @@ RUN mvn -B package
 # =============================================================================
 FROM --platform=linux/amd64 ubuntu:22.04
 
-# Update and install essential packages noninteractive: sem isto o tzdata abre o menu de selecao de fuso e o build trava.
+# Sem isto a instalação do tzdata pede o fuso e o build trava.
 ENV DEBIAN_FRONTEND=noninteractive
 
 # Locale UTF-8.
@@ -91,7 +91,7 @@ RUN ./restore-database.sh
 
 COPY example /opt/example/
 
-# Downloads do PyPI resistentes a rede instavel.
+# Downloads do PyPI resistentes a rede instável.
 ENV PIP_DEFAULT_TIMEOUT=100
 ENV PIP_RETRIES=10
 RUN pip3 install --no-cache-dir -U pip

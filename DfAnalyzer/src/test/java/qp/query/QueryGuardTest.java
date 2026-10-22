@@ -16,7 +16,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 /**
- * If one of them starts passing, the fix regressed.
+ * Tentativas de injeção de SQL na consulta têm de ser recusadas.
  *
  * @author joao
  */
@@ -62,7 +62,7 @@ public class QueryGuardTest {
         return only(enforce(message).getSelections());
     }
 
-    // ------------------------------------------------------------ happy paths
+    // -------------------------------------------------------- casos válidos
 
     @Test
     public void acceptsAQualifiedProjection() {
@@ -106,10 +106,10 @@ public class QueryGuardTest {
 
     @Test
     public void escapesQuotesInsideLiteralsInsteadOfRejectingThem() {
-        // 'O''Brien' stays a literal; it never breaks out of the string.
+        // A aspa não escapa do literal.
         assertEquals("opreparardados.classe = 'O''Brien'",
                 selection("selection(opreparardados.classe = 'O''Brien')"));
-        // And a literal crafted to look like a tautology is re-quoted, not executed.
+        // A tautologia continua literal.
         assertEquals("opreparardados.classe = 'x'' OR ''1''=''1'",
                 selection("selection(opreparardados.classe = 'x'' OR ''1''=''1')"));
     }
@@ -127,9 +127,7 @@ public class QueryGuardTest {
         assertEquals("opreparardados", only(specification.getTargets()));
     }
 
-    /**
-     * Pins existing parser behaviour: handleMessage reads up to the last ) of the line, so anything after it is dropped rather than forwarded.
-     */
+    /** handleMessage lê até o último ) da linha e descarta o resto. */
     @Test
     public void textAfterTheClosingParenthesisIsDropped() {
         assertEquals("opreparardados.acuracia > 0",
@@ -140,31 +138,31 @@ public class QueryGuardTest {
     @Test
     public void injectionPayloadsAreAllRejected() {
         String[] payloads = {
-            // Statement chaining smuggled inside the argument list.
+            // Encadeamento de comandos.
             "projection(opreparardados.classe); DELETE FROM dataflow)",
             "selection(opreparardados.acuracia > 0 -- )",
             "selection(opreparardados.acuracia > 0 /* x */)",
-            // Sub-select reading outside the catalog.
+            // Subconsulta fora do catálogo.
             "selection(opreparardados.acuracia > (SELECT MAX(id) FROM task))",
             "projection((SELECT tag FROM dataflow))",
-            // Tautology through a broken-out literal.
+            // Tautologia por literal quebrado.
             "selection(opreparardados.classe = 'x' OR '1'='1')",
             "projection(opreparardados.classe UNION SELECT tag FROM dataflow)",
-            // Redirecting the COPY INTO target of MonetDbSqlQuery.getCopyOperation.
+            // Desvio do destino do COPY INTO.
             "selection(opreparardados.acuracia > 0 into '/tmp/pwned')",
-            // Unterminated literal, an easy way to swallow the rest of the query.
+            // Literal não terminado.
             "selection(opreparardados.classe = 'x)",
-            // Unknown column, unknown dataset, unknown table.
+            // Coluna, dataset e tabela desconhecidos.
             "projection(opreparardados.senha)",
             "selection(task.id > 0)",
             "source(task)",
             "target(dataflow)",
             "projection(classe)",
-            // Quoted identifier, an alternative escape vehicle.
+            // Identificador entre aspas.
             "projection(\"opreparardados\".\"classe\")",
-            // Function call in a projection.
+            // Chamada de função na projeção.
             "projection(count(opreparardados.classe))",
-            // Unknown query function and unknown mapping.
+            // Função e mapeamento desconhecidos.
             "drop(opreparardados)",
             "mapping(physical); DROP TABLE task)",
         };

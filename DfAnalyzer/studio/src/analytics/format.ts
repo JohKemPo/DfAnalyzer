@@ -1,4 +1,4 @@
-/** Pt-BR: vírgula decimal, sem separador de milhar abaixo de 1000. */
+/** Formato pt-BR. */
 export function formatSeconds(seconds: number | null | undefined): string {
   if (seconds == null) return '—';
   if (seconds < 60) return `${seconds.toFixed(1).replace('.', ',')} s`;

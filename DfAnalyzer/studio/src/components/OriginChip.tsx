@@ -4,7 +4,7 @@ import { Chip, type ChipTone } from './primitives';
 
 export type MappingOrigin = components['schemas']['MappingOrigin'];
 
-/** Origem do mapeamento: quem escreveu a definição prospectiva. */
+/** Quem escreveu a definição prospectiva. */
 const ORIGINS: Record<NonNullable<MappingOrigin>, { label: string; tone: ChipTone; meaning: string }> = {
   manual: {
     label: 'Instrumentação manual',

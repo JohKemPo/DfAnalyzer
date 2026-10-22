@@ -158,7 +158,6 @@ public class JSONReader {
         return null;
     }
 
-    /** Origem do mapeamento. */
     static String normalizeOrigin(Object raw) {
         if (!(raw instanceof String)) {
             return null;

@@ -1,6 +1,5 @@
 import type { QueryRequest } from '../api/catalog';
 
-/** Exporta a consulta como um notebook Jupyter. */
 export interface NotebookOptions {
   /** Endereço de onde a consulta foi exportada (`window.location.origin`). */
   baseUrl: string;
@@ -117,7 +116,7 @@ function code(source: string[]) {
   return { cell_type: 'code', execution_count: null, metadata: {}, outputs: [], source: lines(source) };
 }
 
-/** Literal de string Python — JSON de uma string é um literal Python válido. */
+/** JSON de uma string é um literal Python válido. */
 function pythonString(value: string): string {
   return JSON.stringify(value);
 }

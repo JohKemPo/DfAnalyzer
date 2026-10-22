@@ -16,7 +16,7 @@ import rest.config.AnnotationDao;
 import rest.config.DbConnection;
 
 /**
- * Anotações do pesquisador.
+ * Anotações sobre nós do grafo.
  *
  * @author joao
  */
@@ -24,7 +24,6 @@ import rest.config.DbConnection;
 @RequestMapping(value = "/api/v2", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
 public class AnnotationController {
 
-    /** Cabe uma observação de laboratório; não cabe um artigo. */
     private static final int MAX_BODY = 4000;
     private static final int MAX_TARGET = 200;
     private static final int MAX_AUTHOR = 100;

@@ -43,7 +43,7 @@ public class QuerySpecification {
         this.handleMessage(message);
     }
 
-    /** Constroi a especificacao a partir das colecoes, sem passar pela linguagem de texto. */
+    /** Constrói a especificação sem passar pela linguagem de texto. */
     public QuerySpecification(String dataflowTag, Integer dataflowVersion,
             AttrMapping.Type mapping,
             Collection<String> sources, Collection<String> targets,
@@ -159,7 +159,7 @@ public class QuerySpecification {
         return projections;
     }
 
-    /* Setters below exist so that QueryGuard can replace every user-supplied fragment with its catalog-derived, re-emitted form. */
+    /* Setters usados pelo QueryGuard para trocar cada trecho do usuário pela forma canônica. */
 
     void setSources(Collection<String> sources) {
         this.sources = sources;

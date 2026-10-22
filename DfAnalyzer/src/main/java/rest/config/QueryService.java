@@ -27,14 +27,14 @@ import rest.server.v2.QueryRequest;
 import rest.server.v2.QueryResult;
 
 /**
- * Executa consultas de proveniencia e devolve os DADOS.
+ * Executa consultas de proveniência e devolve os dados.
  *
  * @author joao
  */
 @Service
 public class QueryService {
 
-    /** Teto de linhas por pagina; um cliente nao pode pedir a tabela inteira. */
+    /** Teto de linhas por página. */
     public static final int MAX_SIZE = 1000;
     public static final int DEFAULT_SIZE = 100;
 
@@ -62,7 +62,6 @@ public class QueryService {
                 request.getIncludes(), request.getExcludes(),
                 request.getProjections(), selections);
 
-        // O unico validador.
         QueryGuard.enforce(spec, dataflow);
 
         if (spec.getProjections().isEmpty()) {
@@ -70,15 +69,14 @@ public class QueryService {
                     "Escolha ao menos um atributo para projetar.");
         }
 
-        // writeCsv=false: a v2 nao gera arquivo no servidor.
         MonetDbSqlQuery query =
                 new QueryProcessor(db, dataflow).runSqlQuery(spec, false);
 
-        // Sem source/target o QueryProcessor nao percorre caminho nenhum e o FROM sai vazio -- a SQL resultante e invalida.
+        // Sem source/target o FROM sai vazio.
         if (query.getFromClause().toString().trim().isEmpty()) {
             java.util.Set<String> referenced = datasetsOf(spec.getProjections());
             if (referenced.size() > 1) {
-                // Juntar N datasets sem caminho seria um produto cartesiano que ninguem pediu, e cujo resultado parece dado e nao e.
+                // Sem caminho entre os datasets o resultado seria um produto cartesiano.
                 throw ApiExceptionBridge.badRequest(
                         "Os atributos escolhidos vem de mais de um dataset ("
                         + String.join(", ", referenced) + "). Informe de onde ate"
@@ -90,7 +88,7 @@ public class QueryService {
             }
         }
 
-        // Pede uma linha a mais para saber se ha proxima pagina, sem contar tudo.
+        // Uma linha a mais indica se há próxima página.
         String sql = withPaging(query.toString(), size + 1, page * size);
 
         long startedAt = System.nanoTime();
@@ -106,9 +104,7 @@ public class QueryService {
                 page, size, hasMore, round(elapsedMs));
     }
 
-    /**
-     * Constroi a condicao que restringe a consulta a uma execucao, sem tocar a gramatica do QueryGuard.
-     */
+    /** Condição que restringe a consulta a uma execução. */
     private String executionFilterSelection(Dataflow dataflow, QueryRequest request) {
         Collection<String> projections = request.getProjections();
         Anchor anchor = resolveExecutionAnchor(dataflow, projections);
@@ -117,7 +113,6 @@ public class QueryService {
         return buildExecutionSelection(anchor.datasetTag, anchor.transformationTag, taskIds);
     }
 
-    /** Dataset e transformação usados para filtrar por execução; ver #executionFilterSelection. */
     static final class Anchor {
         final String datasetTag;
         final String transformationTag;
@@ -128,9 +123,7 @@ public class QueryService {
         }
     }
 
-    /**
-     * A metade pura de #executionFilterSelection: escolhe o dataset e a transformação a partir só do catálogo já carregado, sem tocar o banco -- é o que dá para testar sem um AnalyticsDao de verdade.
-     */
+    /** Escolhe dataset e transformação só pelo catálogo, sem banco. */
     static Anchor resolveExecutionAnchor(Dataflow dataflow, Collection<String> projections) {
         if (projections == null || projections.isEmpty()) {
             throw ApiExceptionBridge.badRequest(
@@ -163,13 +156,11 @@ public class QueryService {
         return new Anchor(dataset.getTag(), transformation.getTag());
     }
 
-    /**
-     * A metade que monta a condição, a partir de ids de task já resolvidos no banco (nunca de texto do cliente) -- pura, então também testável sem banco.
-     */
+    /** Monta a condição a partir de ids de task já resolvidos no banco. */
     static String buildExecutionSelection(String datasetTag, String transformationTag,
             List<Integer> taskIds) {
 
-        // Nenhuma task desta transformacao nesta execucao: zero linhas, nao "sem filtro"
+        // Sem tasks na execução, a consulta tem de voltar vazia.
         if (taskIds.isEmpty()) {
             return datasetTag + ".id = -1";
         }
@@ -184,7 +175,6 @@ public class QueryService {
                 ? null : transformations.iterator().next();
     }
 
-    /** Tags de dataset referenciadas por colunas qualificadas ja validadas. */
     private static java.util.Set<String> datasetsOf(java.util.Collection<String> qualified) {
         java.util.Set<String> tags = new java.util.LinkedHashSet<>();
         for (String column : qualified) {
@@ -215,7 +205,6 @@ public class QueryService {
         }
     }
 
-    /** A SQL gerada termina em ;. */
     private static String withPaging(String sql, int limit, int offset) {
         String trimmed = sql.trim();
         if (trimmed.endsWith(";")) {
@@ -241,16 +230,13 @@ public class QueryService {
                 }
             }
         } catch (Exception ex) {
-            // A SQL foi montada a partir do catalogo, entao uma falha aqui e do servidor, nao do pedido -- mas a mensagem do banco ajuda quem le.
+            // A SQL vem do catálogo; a falha é do servidor.
             throw ApiExceptionBridge.badRequest(
                     "Nao foi possivel executar a consulta: " + ex.getMessage());
         }
         return rows;
     }
 
-    /**
-     * Os nomes das colunas saem das projecoes ja canonizadas pelo QueryGuard, e o tipo vem do catalogo carregado.
-     */
     private static List<QueryColumn> describeColumns(QuerySpecification spec, Dataflow dataflow) {
         List<QueryColumn> columns = new ArrayList<>();
         for (String projection : spec.getProjections()) {
@@ -270,7 +256,7 @@ public class QueryService {
         }
         Optional<Attribute> attribute = dataset.get().getAttribute(qualified.substring(dot + 1));
         if (!attribute.isPresent() || attribute.get().getAttributeType() == null) {
-            // Colunas que o catalogo nao descreve, como <transformacao>_task_id.
+            // Colunas fora do catálogo, como <transformacao>_task_id.
             return null;
         }
         return attribute.get().getAttributeType().name();

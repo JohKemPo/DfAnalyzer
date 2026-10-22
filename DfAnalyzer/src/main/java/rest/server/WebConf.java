@@ -47,9 +47,7 @@ public class WebConf {
         return new PDE(db.config.getDataIngestorDirectory());
     }
 
-    /**
-     * The ingestion queue used to be a local variable inside #database(), so its counters (pending transactions, transactions processed, queue time) were unreachable from anywhere.
-     */
+    /** Bean próprio para os contadores da fila serem lidos pela API. */
     @Bean
     ProvenanceQueue provenanceQueue() {
         if (db == null) {

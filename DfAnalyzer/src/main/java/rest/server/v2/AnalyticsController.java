@@ -17,7 +17,7 @@ import rest.config.AnalyticsDao;
 import rest.config.DbConnection;
 
 /**
- * Controlador separado do catálogo: estas rotas leem só as tabelas de runtime (execução, task, performance), nunca o Dataflow de qp.dataflow que o grafo e a consulta carregam — não há necessidade de montar o catálogo inteiro só para contar tasks.
+ * Rotas de analytics; leem só execução, task e performance, sem carregar o catálogo.
  *
  * @author joao
  */
@@ -71,7 +71,6 @@ public class AnalyticsController {
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     private static final int WINDOW_HOURS = 24;
 
-    /** Vazão de ingestão. */
     @GetMapping("/dataflows/{id}/ingestion-throughput")
     public IngestionThroughput throughput(@PathVariable("id") int dataflowId) {
         requireDataflow(dataflowId);

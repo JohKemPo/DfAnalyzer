@@ -58,7 +58,6 @@ def test_fan_in_de_duas_transformacoes(tracker):
     tracker.task("B")
     c = tracker.task("C", depends_on=["A", "B"])
     assert deps(c) == {"a": [1], "b": [1]}
-    # Um registro so, com um identificador por tag - o formato que o servidor exige.
     assert c.get_specification()["dependency"]["ids"] == [{"id": "1,1"}]
 
 
@@ -104,7 +103,7 @@ def test_dependencia_sem_produtora_avisa_e_nao_inventa(tracker):
 
 
 def test_limite_conhecido_dois_lacos_separados(tracker):
-    """Registrado como limite, nao como comportamento desejado: a regra ve ordem de criacao, nao fluxo de dados - a 1a consumidora fica ligada a todas as produtoras, as seguintes so a ultima."""
+    """Limite conhecido: a regra segue a ordem de criação, não o fluxo de dados."""
     for _ in range(3):
         tracker.task("A")
     vistos = [deps(tracker.task("B", depends_on=["A"])) for _ in range(3)]

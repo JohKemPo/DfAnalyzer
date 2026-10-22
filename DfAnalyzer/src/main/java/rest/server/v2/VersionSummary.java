@@ -1,7 +1,7 @@
 package rest.server.v2;
 
 /**
- * One row of GET /api/v2/dataflows/{id}/versions — the "versões" side of the versions×executions panel.
+ * Uma linha de GET /api/v2/dataflows/{id}/versions.
  *
  * @author joao
  */
@@ -11,7 +11,7 @@ public class VersionSummary {
     private final int executions;
     private final int tasks;
     private final int errorTasks;
-    /** `performance.endtime` of the last task of this version; null if none ran. */
+    /** performance.endtime da última task desta versão; null se nenhuma rodou. */
     private final String lastRun;
     private final String origin;
     private final String generator;

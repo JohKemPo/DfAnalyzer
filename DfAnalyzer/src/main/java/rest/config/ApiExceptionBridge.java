@@ -3,7 +3,7 @@ package rest.config;
 import rest.server.v2.ApiException;
 
 /**
- * Atalho para lancar ApiException de dentro de rest.config.
+ * Atalho para lançar ApiException de dentro de rest.config.
  *
  * @author joao
  */

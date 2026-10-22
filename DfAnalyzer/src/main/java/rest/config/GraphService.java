@@ -40,7 +40,7 @@ public class GraphService {
                 : datasetView(dataflowId, dataflowTag, version, dataflow);
     }
 
-    /** Visão PROV-correta: a transformação é o nó (Activity) e o dataset é a aresta (Entity). */
+    /** Transformação como nó (Activity) e dataset como aresta (Entity). */
     private GraphResponse transformationView(int dataflowId, String dataflowTag, int version,
             Dataflow dataflow) {
 
@@ -90,7 +90,7 @@ public class GraphService {
                 GraphResponse.View.TRANSFORMATION, new ArrayList<>(nodes.values()), edges);
     }
 
-    /** Visão de datasets: o dataset é o nó e a transformação é a aresta. */
+    /** Dataset como nó e transformação como aresta. */
     private GraphResponse datasetView(int dataflowId, String dataflowTag, int version,
             Dataflow dataflow) {
 
@@ -104,7 +104,6 @@ public class GraphService {
                     roleOf(dataflow, dataset), attributesOf(dataset), null));
         }
 
-        // Dois datasets se ligam quando um é entrada e o outro saída da MESMA transformação: é ela que vira a aresta.
         for (Transformation transformation : dataflow.getTransformations()) {
             Collection<Dataset> inputs = dataflow.getTransformationPreviousDatasets(transformation);
             Collection<Dataset> outputs = dataflow.getTransformationNextDatasets(transformation);
@@ -127,7 +126,7 @@ public class GraphService {
 
     // --------------------------------------------------------------- linhagem
 
-    /** Responde às duas perguntas de linhagem: de onde veio? e o que isto afetou? */
+    /** Linhagem a montante e a jusante de um nó. */
     public LineageResponse traceLineage(GraphResponse graph, String focusNodeId) {
         Map<String, List<String>> forward = new LinkedHashMap<>();
         Map<String, List<String>> backward = new LinkedHashMap<>();
@@ -139,7 +138,7 @@ public class GraphService {
         Set<String> upstream = reachable(backward, focusNodeId);
         Set<String> downstream = reachable(forward, focusNodeId);
 
-        // Uma aresta pertence à linhagem quando liga dois nós do mesmo lado do foco; assim o realce no grafo não acende atalhos que passam ao largo.
+        // Só entram arestas entre nós do mesmo lado do foco.
         Set<String> lineageNodes = new LinkedHashSet<>(upstream);
         lineageNodes.add(focusNodeId);
         lineageNodes.addAll(downstream);
@@ -168,7 +167,7 @@ public class GraphService {
         return list;
     }
 
-    /** BFS iterativa: um dataflow cíclico não pode estourar a pilha. */
+    /** BFS iterativa, para não estourar a pilha em dataflow cíclico. */
     private static Set<String> reachable(Map<String, List<String>> adjacency, String start) {
         Set<String> visited = new LinkedHashSet<>();
         Deque<String> queue = new ArrayDeque<>();
@@ -211,9 +210,7 @@ public class GraphService {
         return attributes;
     }
 
-    /**
-     * Prefixos evitam colisão de id quando uma transformação e um dataset têm a mesma tag — possível, já que são vocabulários independentes.
-     */
+    /** O prefixo evita colisão entre transformação e dataset de mesma tag. */
     private static String transformationId(String tag) {
         return "t:" + tag;
     }

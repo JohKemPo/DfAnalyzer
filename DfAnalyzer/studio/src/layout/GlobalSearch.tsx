@@ -4,7 +4,7 @@ import { useDataflowSummaries, useGraph, type GraphNode } from '../api/catalog';
 import { MONO } from '../theme/tokens';
 import { AnalyticsIcon, DataflowsIcon, GraphIcon, SearchIcon } from './icons';
 
-/** O bastante para cobrir os dataflows de um laboratório sem paginar a busca. */
+/** Dataflows lidos pela busca, sem paginação. */
 const SEARCH_PAGE_SIZE = 200;
 const MAX_PER_GROUP = 8;
 
@@ -16,7 +16,7 @@ interface SearchResult {
   action: () => void;
 }
 
-/** Busca global — Ctrl/Cmd+K de qualquer tela. */
+/** Busca global (Ctrl/Cmd+K). */
 export function GlobalSearch({
   onClose,
   currentDataflow,

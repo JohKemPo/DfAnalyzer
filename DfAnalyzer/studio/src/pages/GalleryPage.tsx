@@ -19,12 +19,11 @@ import { ExportIcon, FileIcon } from '../layout/icons';
 import { SectionSwitch, type DataflowSection } from '../layout/SectionSwitch';
 import { MONO, type StudioPalette } from '../theme/tokens';
 
-/** O bastante para uma estatística honesta sem puxar a tabela toda por card. */
+/** Linhas lidas por card. */
 const CARD_SAMPLE_SIZE = 50;
-/** Amostra maior quando o dataset está aberto — inclusive para a exportação CSV. */
+/** Linhas lidas com o dataset aberto, também usadas no CSV. */
 const DETAIL_SAMPLE_SIZE = 200;
 
-/** Galeria de dados. */
 export function GalleryPage({
   dataflowId,
   dataflowTag,
@@ -52,7 +51,7 @@ export function GalleryPage({
   const graphDatasets = useGraph(dataflowId, 'dataset');
   const graphTransformations = useGraph(dataflowId, 'transformation');
 
-  // Producer de um dataset = a transformação de onde parte a aresta rotulada com a tag do dataset, na visão de transformações (ver GraphService) — um dataset de entrada do fluxo nunca aparece como alvo dessa busca, porque a aresta dele nasce de um nó de DATASET, não de transformação.
+  // Produtora é a origem da aresta com a tag do dataset na visão de transformações.
   const producerByTag = useMemo(() => {
     const graph = graphTransformations.data;
     if (!graph) return new Map<string, string>();

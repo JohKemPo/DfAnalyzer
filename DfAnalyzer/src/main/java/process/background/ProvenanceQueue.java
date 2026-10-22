@@ -29,7 +29,7 @@ public class ProvenanceQueue extends Thread {
     public double queueTotalTime;
     public int transactionsProcessed;
 
-    /** Falhas de ingestao desde que o processo subiu. */
+    /** Falhas de ingestão desde que o processo subiu. */
     public volatile int ingestionErrors;
     public volatile String lastIngestionError;
 
@@ -51,7 +51,7 @@ public class ProvenanceQueue extends Thread {
         return null;
     }
 
-    /** Devolve o dataflow do cache; se nao estiver la, reconstroi do banco. */
+    /** Devolve o dataflow do cache ou o reconstrói do banco. */
     private Dataflow resolveDataflow(String dfTag) {
         Dataflow cached = getDataflow(dfTag);
         if (cached != null) {
@@ -64,7 +64,6 @@ public class ProvenanceQueue extends Thread {
         return loaded;
     }
 
-    /** Comparacao a prova de nulo dos dois lados. */
     private static boolean matches(Dataflow df, String dfTag) {
         return df != null && df.dataflowTag != null && df.dataflowTag.equals(dfTag);
     }
@@ -81,7 +80,6 @@ public class ProvenanceQueue extends Thread {
         this.transactionsProcessed = 0;
     }
 
-    /** Espera entre varreduras quando nao ha nada na fila. */
     private static final long IDLE_SLEEP_MS = 50;
 
     @Override
@@ -91,7 +89,7 @@ public class ProvenanceQueue extends Thread {
             try {
                 processed = runQueries();
             } catch (Exception ex) {
-                // A thread de ingestao nao pode morrer por causa de uma transacao ruim: se ela morre, todas as tasks seguintes somem sem aviso.
+                // Se a thread morrer, todas as transações seguintes se perdem.
                 ingestionErrors++;
                 lastIngestionError = ex.getClass().getSimpleName()
                         + (ex.getMessage() == null ? "" : ": " + ex.getMessage());
@@ -100,7 +98,6 @@ public class ProvenanceQueue extends Thread {
             }
 
             if (processed == 0) {
-                // Sem isto o laco gira a 100% de CPU com a fila vazia.
                 try {
                     Thread.sleep(IDLE_SLEEP_MS);
                 } catch (InterruptedException ex) {
@@ -158,7 +155,7 @@ public class ProvenanceQueue extends Thread {
             t.execEndTime = endTime;
             queueTotalTime = queueTotalTime + (t.queueEndTime - t.queueStartTime);
 
-            // Transacao de TASK nao carrega objeto Dataflow: getDataflowFromObjects() devolve null.
+            // Transação de TASK não carrega o objeto Dataflow.
             Dataflow dataflow = t.getDataflowFromObjects();
             if (dataflow != null && dataflow.dataflowTag != null
                     && getDataflow(dataflow.dataflowTag) == null) {

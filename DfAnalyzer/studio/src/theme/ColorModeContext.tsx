@@ -16,7 +16,7 @@ function readStoredMode(): ColorMode | null {
     const stored = window.localStorage.getItem(STORAGE_KEY);
     return stored === 'light' || stored === 'dark' ? stored : null;
   } catch {
-    // Private windows and blocked site data throw on access.
+    // Janela privada ou dados bloqueados lançam exceção.
     return null;
   }
 }
@@ -35,7 +35,6 @@ export function ColorModeProvider({ children }: { children: ReactNode }) {
       try {
         window.localStorage.setItem(STORAGE_KEY, next);
       } catch {
-        // Remembering the choice is a convenience, never a requirement.
       }
       return next;
     });
