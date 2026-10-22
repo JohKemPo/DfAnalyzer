@@ -7,15 +7,21 @@ origem da API.
 ## Telas
 
 - **Dataflows** — lista com estrutura, versões, execuções, tasks, última
-  execução, origem do mapeamento e status.
+  execução, origem do mapeamento e status; execuções dos últimos sete dias e
+  exportação do PROV-JSON de qualquer dataflow da lista.
 - **Grafo** — proveniência prospectiva em duas visões (transformação como nó
-  ou dataset como nó), rastreio de linhagem, inspeção de nó, anotações e
-  exportação em SVG, PNG e PROV-JSON.
+  ou dataset como nó), escolha da execução mostrada, rastreio de linhagem,
+  inspeção de nó com as métricas da execução, anotações, reorganização
+  automática e exportação em SVG, PNG e PROV-JSON.
 - **Consulta** — construtor visual sobre o catálogo, resultado paginado,
   filtro por execução e exportação em CSV e em notebook Jupyter.
-- **Analytics** — versões por execuções, linha do tempo de tasks, saúde e
-  vazão da ingestão, comparação de execuções.
+- **Analytics** — versões por execuções com recorte por período, linha do
+  tempo de tasks, saúde e vazão da ingestão, transações pendentes na fila,
+  comparação de execuções e exportação em CSV.
 - **Galeria** — perfil dos datasets e de seus atributos.
+
+Em telas estreitas a navegação vai para uma barra inferior e o grafo pode ser
+visto como lista de nós.
 
 ## Como rodar
 

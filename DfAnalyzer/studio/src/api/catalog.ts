@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiGet, apiSend } from './client';
 import type { components } from './schema';
 
-/** Hooks over the v2 catalogue endpoints. */
+/** Hooks dos endpoints de catálogo da v2. */
 export type DataflowSummary = components['schemas']['DataflowSummary'];
 export type DataflowStatus = components['schemas']['DataflowStatus'];
 export type DataflowSummaryPage = components['schemas']['DataflowSummaryPage'];
@@ -25,11 +25,22 @@ export function useOverview() {
   return useQuery({
     queryKey: catalogKeys.overview(),
     queryFn: ({ signal }) => apiGet<Overview>('/api/v2/overview', signal),
-    // A fila de ingestão muda sozinha; o resto do overview é barato junto.
+    // A fila de ingestão muda sozinha.
     refetchInterval: 15_000,
   });
 }
 
+export type PendingTransaction = components['schemas']['PendingTransaction'];
+
+/** Conteúdo da fila de ingestão, pedido só com a lista aberta. */
+export function usePendingTransactions(enabled: boolean) {
+  return useQuery({
+    queryKey: ['v2', 'ingestion', 'pending'] as const,
+    queryFn: ({ signal }) => apiGet<PendingTransaction[]>('/api/v2/ingestion/pending', signal),
+    enabled,
+    refetchInterval: enabled ? 5_000 : false,
+  });
+}
 
 export type GraphResponse = components['schemas']['GraphResponse'];
 export type GraphNode = components['schemas']['GraphNode'];
@@ -37,7 +48,6 @@ export type GraphEdge = components['schemas']['GraphEdge'];
 export type AttributeInfo = components['schemas']['AttributeInfo'];
 export type LineageResponse = components['schemas']['LineageResponse'];
 
-/** Como o cliente fala das duas visões; o servidor devolve em maiúsculas. */
 export type GraphView = 'transformation' | 'dataset';
 
 export const graphKeys = {
@@ -52,7 +62,7 @@ export function useGraph(dataflowId: number | null, view: GraphView) {
     queryFn: ({ signal }) =>
       apiGet<GraphResponse>(`/api/v2/dataflows/${dataflowId}/graph?view=${view}`, signal),
     enabled: dataflowId !== null,
-    // O grafo é proveniência prospectiva: só muda quando alguém salva o dataflow.
+    // Proveniência prospectiva só muda quando o dataflow é salvo.
     staleTime: 5 * 60_000,
   });
 }
@@ -121,9 +131,7 @@ export function useQueryRun(dataflowId: number) {
   });
 }
 
-/**
- * Roda uma consulta v2 como leitura cacheada (não uma mutação disparada por clique) — para telas que precisam do resultado assim que os parâmetros mudam, como o comparador de execuções projetando todos os atributos de um dataset.
- */
+/** Consulta v2 como leitura em cache, refeita quando os parâmetros mudam. */
 export function useDatasetSnapshot(
   dataflowId: number | null,
   request: QueryRequest | null,
@@ -135,7 +143,6 @@ export function useDatasetSnapshot(
   });
 }
 
-/** URL da exportação PROV-JSON. */
 export function provJsonUrl(dataflowId: number): string {
   return `/api/v2/dataflows/${dataflowId}/prov.json`;
 }
@@ -167,9 +174,7 @@ export function useVersions(dataflowId: number | null) {
   });
 }
 
-/**
- * `live` liga o polling: o grafo é proveniência *prospectiva* e não muda sozinho, mas execução e tasks são retrospectivas e mudam enquanto o pipeline roda.
- */
+/** `live` liga o polling, porque execuções e tasks mudam enquanto o pipeline roda. */
 export function useExecutions(
   dataflowId: number | null,
   version: number | null,
@@ -210,7 +215,6 @@ export function useIngestionHealth(dataflowId: number | null) {
     queryFn: ({ signal }) =>
       apiGet<IngestionHealth>(`/api/v2/dataflows/${dataflowId}/ingestion-health`, signal),
     enabled: dataflowId !== null,
-    // Mesmo ritmo da fila de ingestao no overview.
     refetchInterval: 15_000,
   });
 }

@@ -48,6 +48,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v2/ingestion/pending": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Transações ainda na fila de ingestão
+         * @description O conteúdo da fila que `queuePending` só conta: o tipo de cada
+         *     transação e o dataflow a que pertence, até cem itens. A fila vive na
+         *     memória do processo; depois de ingerida, a transação sai daqui.
+         */
+        get: operations["getPendingTransactions"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v2/dataflows/{id}/graph": {
         parameters: {
             query?: never;
@@ -699,6 +721,12 @@ export interface components {
             versions: number;
             /** Format: int64 */
             executions: number;
+            /**
+             * Format: int64
+             * @description Execuções com alguma task iniciada nos últimos sete dias, por
+             *     `performance.starttime` (horário de quem gravou, sem fuso).
+             */
+            executionsLast7Days: number;
             /** Format: int64 */
             transformations: number;
             /** Format: int64 */
@@ -815,6 +843,12 @@ export interface components {
             /** Format: int32 */
             runningTasks: number;
         };
+        PendingTransaction: {
+            /** @description `DATAFLOW` ou `TASK`. */
+            type: string;
+            /** @description Sempre presente no corpo, podendo ser `null`. */
+            dataflowTag: string | null;
+        };
         IngestionHealth: {
             /** Format: int32 */
             tasks: number;
@@ -893,6 +927,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Overview"];
+                };
+            };
+        };
+    };
+    getPendingTransactions: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Transações pendentes, na ordem da fila */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PendingTransaction"][];
                 };
             };
         };

@@ -17,7 +17,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 /**
- * Keeps static/api/openapi.yaml and the v2 DTOs from drifting apart.
+ * Mantém static/api/openapi.yaml e os DTOs da v2 em acordo.
  *
  * @author joao
  */
@@ -49,7 +49,7 @@ public class OpenApiContractTest {
         return new TreeSet<>(properties.keySet());
     }
 
-    /** Property names Jackson will emit for a DTO, derived from its getters. */
+    /** Propriedades que o Jackson emite para um DTO, pelos getters. */
     private static Set<String> serializedProperties(Class<?> type) {
         Set<String> names = new TreeSet<>();
         for (Method method : type.getMethods()) {
@@ -113,6 +113,7 @@ public class OpenApiContractTest {
         assertContractMatches("TaskAnomaly", TaskAnomaly.class);
         assertContractMatches("ExecutionTimeline", ExecutionTimeline.class);
         assertContractMatches("IngestionAlert", IngestionAlert.class);
+        assertContractMatches("PendingTransaction", PendingTransaction.class);
         assertContractMatches("IngestionHealth", IngestionHealth.class);
         assertContractMatches("IngestionThroughput", IngestionThroughput.class);
     }

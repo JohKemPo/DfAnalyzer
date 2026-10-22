@@ -9,13 +9,13 @@ import {
   type Annotation,
   type GraphNode,
   type LineageResponse,
+  type TimelineRow,
 } from '../api/catalog';
 import { Chip, Segmented } from '../components/primitives';
 import { MONO } from '../theme/tokens';
 
 type Tab = 'attributes' | 'lineage' | 'notes' | 'raw';
 
-/** Painel de inspeção do nó selecionado. */
 export function NodeInspector({
   node,
   lineage,
@@ -23,16 +23,21 @@ export function NodeInspector({
   mapping,
   onClose,
   onFocusNode,
+  stats,
+  onQuery,
+  onOpenData,
 }: {
   node: GraphNode;
   lineage: LineageResponse | null;
   dataflowId: number;
-  /**
-   * Origem do mapeamento da versão em exibição; `undefined` enquanto a lista de versões carrega ou se ela falhou - nesse caso a linha não aparece, em vez de mostrar "não informada" para algo que só não foi lido ainda.
-   */
+  /** `undefined` enquanto as versões carregam ou se falharam; a linha então não aparece. */
   mapping?: { origin: MappingOrigin; generator: string | null; version: number };
   onClose: () => void;
   onFocusNode: (nodeId: string) => void;
+  /** Ausente sem execução ou quando o nó é um dataset. */
+  stats?: { executionId: number; row: TimelineRow | null };
+  onQuery?: () => void;
+  onOpenData?: () => void;
 }) {
   const { studio } = useTheme();
   const [tab, setTab] = useState<Tab>('attributes');
@@ -103,6 +108,29 @@ export function NodeInspector({
         </Box>
       </Stack>
 
+      {isTransformation && stats && (
+        <Box sx={{ px: 2, pt: 1.5, flex: 'none' }}>
+          {stats.row ? (
+            <Stack direction="row" spacing={1}>
+              <Metric label="TASKS" value={stats.row.taskCount.toLocaleString('pt-BR')} />
+              <Metric label="DURAÇÃO" value={formatSeconds(stats.row.durationSeconds)} />
+              <Metric
+                label="FALHAS"
+                value={stats.row.errorTaskCount.toLocaleString('pt-BR')}
+                tone={stats.row.errorTaskCount > 0 ? 'crit' : undefined}
+              />
+            </Stack>
+          ) : (
+            <Box sx={{ fontSize: 11.5, color: studio.muted }}>
+              Nenhuma task desta transformação na execução #{stats.executionId}.
+            </Box>
+          )}
+          {stats.row && (
+            <Box sx={{ mt: 0.75, fontSize: 11, color: studio.muted }}>execução #{stats.executionId}</Box>
+          )}
+        </Box>
+      )}
+
       <Box sx={{ px: 2, py: 1.5, flex: 'none' }}>
         <Segmented
           ariaLabel="Aba de inspeção"
@@ -159,6 +187,17 @@ export function NodeInspector({
           <br />
           Vale para a definição inteira desta versão, não para este nó em particular.
         </Box>
+      )}
+      {(onQuery || onOpenData) && (
+        <Stack direction="row" spacing={1} useFlexGap sx={{ p: 1.5, borderTop: `1px solid ${studio.border}`, flex: 'none', flexWrap: 'wrap' }}>
+          <ActionButton onClick={() => setTab('lineage')}>Rastrear origem</ActionButton>
+          {onOpenData && <ActionButton onClick={onOpenData}>Metadados completos</ActionButton>}
+          {onQuery && (
+            <ActionButton primary onClick={onQuery}>
+              Consultar
+            </ActionButton>
+          )}
+        </Stack>
       )}
     </Box>
   );
@@ -245,9 +284,7 @@ function LineageTab({
   );
 }
 
-/**
- * Análise de impacto — "se este nó estiver errado, o que foi contaminado?" é a mesma pergunta que "O que isto afetou" já responde; o que faltava era o resumo direto, sem precisar contar a lista abaixo.
- */
+/** Resumo do que está a jusante do nó. */
 function ImpactSummary({ downstream }: { downstream: string[] }) {
   const { studio } = useTheme();
   const datasets = downstream.filter((id) => id.startsWith('d:')).length;
@@ -321,7 +358,6 @@ function LineageList({
   );
 }
 
-/** Anotações do pesquisador ancoradas neste nó. */
 function NotesTab({ dataflowId, target }: { dataflowId: number; target: string }) {
   const { studio } = useTheme();
   const notes = useAnnotations(dataflowId);
@@ -345,7 +381,6 @@ function NotesTab({ dataflowId, target }: { dataflowId: number; target: string }
           value={draft}
           onChange={(event: ChangeEvent<HTMLTextAreaElement>) => setDraft(event.target.value)}
           onKeyDown={(event: KeyboardEvent<HTMLTextAreaElement>) => {
-            // Ctrl+Enter salva: a pessoa está escrevendo, não navegando.
             if ((event.ctrlKey || event.metaKey) && event.key === 'Enter') {
               event.preventDefault();
               submit();
@@ -487,4 +522,50 @@ function roleLabel(role: NonNullable<GraphNode['role']>): string {
     default:
       return 'intermediário';
   }
+}
+
+function Metric({ label, value, tone }: { label: string; value: string; tone?: 'crit' }) {
+  const { studio } = useTheme();
+  return (
+    <Box sx={{ flex: '1 1 0', minWidth: 0, p: 1, borderRadius: '9px', border: `1px solid ${studio.border}`, bgcolor: studio.elev }}>
+      <Box sx={{ fontSize: 10, fontWeight: 600, letterSpacing: '.04em', color: studio.muted }}>{label}</Box>
+      <Box sx={{ mt: 0.25, fontSize: 15, fontWeight: 600, color: tone === 'crit' ? studio.crit : studio.ink, fontVariantNumeric: 'tabular-nums' }}>
+        {value}
+      </Box>
+    </Box>
+  );
+}
+
+function ActionButton({ children, onClick, primary }: { children: React.ReactNode; onClick: () => void; primary?: boolean }) {
+  const { studio } = useTheme();
+  return (
+    <Box
+      component="button"
+      type="button"
+      onClick={onClick}
+      sx={{
+        flex: '1 1 auto',
+        px: 1.25,
+        height: 32,
+        borderRadius: '9px',
+        border: `1px solid ${primary ? studio.blue : studio.border}`,
+        bgcolor: primary ? studio.blue : studio.elev,
+        color: primary ? '#fff' : studio.ink,
+        fontFamily: 'inherit',
+        fontSize: 12,
+        fontWeight: 500,
+        whiteSpace: 'nowrap',
+        cursor: 'pointer',
+        '&:hover': { borderColor: primary ? studio.blue : studio.muted },
+        '&:focus-visible': { outline: `2px solid ${studio.blue}`, outlineOffset: 2 },
+      }}
+    >
+      {children}
+    </Box>
+  );
+}
+
+function formatSeconds(seconds: number): string {
+  if (seconds < 60) return `${seconds.toLocaleString('pt-BR', { maximumFractionDigits: 1 })} s`;
+  return `${Math.floor(seconds / 60)}m ${String(Math.round(seconds % 60)).padStart(2, '0')}s`;
 }

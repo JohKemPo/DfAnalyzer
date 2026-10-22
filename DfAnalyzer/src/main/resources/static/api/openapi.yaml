@@ -83,6 +83,24 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Overview" }
 
+  /api/v2/ingestion/pending:
+    get:
+      tags: [catálogo]
+      summary: Transações ainda na fila de ingestão
+      description: |
+        O conteúdo da fila que `queuePending` só conta: o tipo de cada
+        transação e o dataflow a que pertence, até cem itens. A fila vive na
+        memória do processo; depois de ingerida, a transação sai daqui.
+      operationId: getPendingTransactions
+      responses:
+        "200":
+          description: Transações pendentes, na ordem da fila
+          content:
+            application/json:
+              schema:
+                type: array
+                items: { $ref: "#/components/schemas/PendingTransaction" }
+
   /api/v2/dataflows/{id}/graph:
     get:
       tags: [grafo]
@@ -976,6 +994,7 @@ components:
         - dataflows
         - versions
         - executions
+        - executionsLast7Days
         - transformations
         - tasks
         - queuePending
@@ -988,6 +1007,12 @@ components:
         dataflows: { type: integer, format: int64 }
         versions: { type: integer, format: int64 }
         executions: { type: integer, format: int64 }
+        executionsLast7Days:
+          type: integer
+          format: int64
+          description: |
+            Execuções com alguma task iniciada nos últimos sete dias, por
+            `performance.starttime` (horário de quem gravou, sem fuso).
         transformations: { type: integer, format: int64 }
         tasks: { type: integer, format: int64 }
         queuePending:
@@ -1116,6 +1141,18 @@ components:
         executionTag: { type: string }
         errorTasks: { type: integer, format: int32 }
         runningTasks: { type: integer, format: int32 }
+
+    PendingTransaction:
+      type: object
+      required: [type, dataflowTag]
+      properties:
+        type:
+          type: string
+          description: "`DATAFLOW` ou `TASK`."
+        dataflowTag:
+          type: string
+          nullable: true
+          description: Sempre presente no corpo, podendo ser `null`.
 
     IngestionHealth:
       type: object

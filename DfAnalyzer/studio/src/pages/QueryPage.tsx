@@ -31,7 +31,6 @@ interface Column {
   type: AttributeInfo['type'];
 }
 
-/** A tela de consulta. */
 export function QueryPage({
   dataflowId,
   dataflowTag,
@@ -50,7 +49,7 @@ export function QueryPage({
   const graphFlow = useGraph(dataflowId, 'transformation');
   const run = useQueryRun(dataflowId);
 
-  // A versao mais recente e a mesma que o backend usa quando a consulta nao informa `version` -- e' dela que vem a lista de execucoes para filtrar.
+  // É a versão que o backend usa quando a consulta não informa `version`.
   const versions = useVersions(dataflowId);
   const latestVersion = versions.data?.[0]?.version ?? null;
   const executions = useExecutions(dataflowId, latestVersion);
@@ -68,7 +67,6 @@ export function QueryPage({
     [graphDatasets.data],
   );
 
-  /** Atributos dos datasets escolhidos; sem escolha, de todos. */
   const columns: Column[] = useMemo(() => {
     const scope = chosen.length > 0
       ? datasets.filter((d) => chosen.includes(d.tag))
@@ -113,7 +111,6 @@ export function QueryPage({
 
   return (
     <>
-      {/* flexWrap: a 390 px o seletor de seção e o botão de exportar eram cortados na borda direita. */}
       <Stack direction="row" spacing={1} alignItems="center" sx={{ flex: 'none', flexWrap: 'wrap', rowGap: 1 }}>
         <Box
           component="button" type="button" onClick={onBack}
@@ -186,7 +183,7 @@ export function QueryPage({
                   if (tag && !chosen.includes(tag)) setChosen([...chosen, tag]);
                 }}
               >
-                <option value="">+ Adicionar dataset</option>
+                <option value="">+ Adicionar do grafo</option>
                 {datasets
                   .filter((d) => !chosen.includes(d.tag))
                   .map((d) => (
@@ -420,7 +417,7 @@ export function QueryPage({
                           baseUrl: window.location.origin,
                           dataflowId,
                           dataflowTag,
-                          // A consulta que PRODUZIU este resultado, não a que está montada agora no construtor.
+                          // A consulta que produziu este resultado, não a montada agora.
                           request: run.variables ?? request,
                           sql: run.data.sql,
                           exportedAt: new Date().toLocaleString('pt-BR'),

@@ -1,6 +1,7 @@
-import { Alert, AlertTitle, Box, Skeleton, Stack, useTheme } from '@mui/material';
+import { Alert, AlertTitle, Box, Menu, MenuItem, Skeleton, Stack, useTheme } from '@mui/material';
 import { useMemo, useState } from 'react';
 import {
+  provJsonUrl,
   useDataflowSummaries,
   useOverview,
   type DataflowStatus,
@@ -9,13 +10,13 @@ import {
 import { OriginChip } from '../components/OriginChip';
 import { Chip, Mono, Segmented, StudioCard, Tile } from '../components/primitives';
 import { CheckIcon, ChevronIcon, ExportIcon, RefreshIcon, SearchIcon } from '../layout/icons';
-import type { ChangeEvent, KeyboardEvent, ReactNode } from 'react';
+import { MONO } from '../theme/tokens';
+import type { ChangeEvent, KeyboardEvent, MouseEvent, ReactNode } from 'react';
 
-type StatusFilter = 'all' | 'running' | 'finished';
+type StatusFilter = 'all' | 'generated' | 'running' | 'finished';
 
 const PAGE_SIZE = 25;
 
-/** The dataflow catalogue — the Studio's entry screen. */
 export function DataflowsPage({
   onOpenDataflow,
 }: {
@@ -35,6 +36,7 @@ export function DataflowsPage({
         !needle || item.tag.toLowerCase().includes(needle) || String(item.id) === needle;
       const matchesStatus =
         statusFilter === 'all' ||
+        (statusFilter === 'generated' && (item.origin === 'generated' || item.origin === 'curated')) ||
         (statusFilter === 'running' && item.status === 'RUNNING') ||
         (statusFilter === 'finished' && item.status === 'FINISHED');
       return matchesText && matchesStatus;
@@ -43,7 +45,10 @@ export function DataflowsPage({
 
   return (
     <>
-      <PageHeader onRefresh={() => void Promise.all([dataflows.refetch(), overview.refetch()])} />
+      <PageHeader
+        onRefresh={() => void Promise.all([dataflows.refetch(), overview.refetch()])}
+        exportable={rows}
+      />
 
       <Tiles />
 
@@ -100,8 +105,15 @@ export function DataflowsPage({
   );
 }
 
-function PageHeader({ onRefresh }: { onRefresh: () => void }) {
+function PageHeader({
+  onRefresh,
+  exportable,
+}: {
+  onRefresh: () => void;
+  exportable: DataflowSummary[];
+}) {
   const { studio } = useTheme();
+  const [anchor, setAnchor] = useState<HTMLElement | null>(null);
   return (
     <Stack
       direction={{ xs: 'column', md: 'row' }}
@@ -117,13 +129,38 @@ function PageHeader({ onRefresh }: { onRefresh: () => void }) {
         </Box>
       </Box>
 
-      <Stack direction="row" spacing={1} sx={{ flex: 'none' }}>
+      <Stack direction="row" spacing={1} sx={{ flex: 'none', flexWrap: 'wrap', rowGap: 1 }}>
         <GhostButton onClick={onRefresh} icon={<RefreshIcon size={14} />}>
           Atualizar
         </GhostButton>
-        <GhostButton disabled title="Abra um dataflow para exportar o PROV-JSON dele" icon={<ExportIcon size={14} />}>
+        <GhostButton
+          disabled={exportable.length === 0}
+          title={
+            exportable.length === 0
+              ? 'Nenhum dataflow na lista para exportar'
+              : 'Proveniência prospectiva de um dataflow no formato W3C PROV-JSON'
+          }
+          ariaHasPopup
+          onClick={(event) => setAnchor(event.currentTarget)}
+          icon={<ExportIcon size={14} />}
+        >
           Exportar PROV-JSON
         </GhostButton>
+        <Menu anchorEl={anchor} open={anchor !== null} onClose={() => setAnchor(null)}>
+          {exportable.map((item) => (
+            <MenuItem
+              key={item.id}
+              dense
+              component="a"
+              href={provJsonUrl(item.id)}
+              download={`${item.tag}.prov.json`}
+              onClick={() => setAnchor(null)}
+              sx={{ fontFamily: MONO, fontSize: 12.5 }}
+            >
+              {item.tag}
+            </MenuItem>
+          ))}
+        </Menu>
       </Stack>
     </Stack>
   );
@@ -135,12 +172,14 @@ function GhostButton({
   onClick,
   disabled,
   title,
+  ariaHasPopup,
 }: {
   children: ReactNode;
   icon?: ReactNode;
-  onClick?: () => void;
+  onClick?: (event: MouseEvent<HTMLElement>) => void;
   disabled?: boolean;
   title?: string;
+  ariaHasPopup?: boolean;
 }) {
   const { studio } = useTheme();
   return (
@@ -150,6 +189,7 @@ function GhostButton({
       onClick={onClick}
       disabled={disabled}
       title={title}
+      aria-haspopup={ariaHasPopup ? 'menu' : undefined}
       sx={{
         height: 34,
         px: 1.625,
@@ -189,7 +229,15 @@ function Tiles() {
       }}
     >
       <Tile label="Dataflows" value={metric(data?.dataflows, isPending, isError)} />
-      <Tile label="Execuções" value={metric(data?.executions, isPending, isError)} />
+      <Tile
+        label="Execuções · 7 dias"
+        value={metric(data?.executionsLast7Days, isPending, isError)}
+        footer={
+          !isPending && !isError && data ? (
+            <Box sx={{ mt: 0.25, fontSize: 11.5 }}>{data.executions.toLocaleString('pt-BR')} no total</Box>
+          ) : undefined
+        }
+      />
       <Tile label="Tasks ingeridas" value={metric(data?.tasks, isPending, isError)} />
       <Tile
         label="Fila de ingestão"
@@ -211,7 +259,6 @@ function Tiles() {
   );
 }
 
-/** Saúde da ingestão. */
 function IngestionHealth({
   queueHealthy,
   errors,
@@ -279,7 +326,8 @@ function CardHeader({
           onChange={onStatusFilter}
           options={[
             { value: 'all', label: 'Todos' },
-            { value: 'running', label: 'Em execução' },
+            { value: 'generated', label: 'Gerados' },
+            { value: 'running', label: 'Rodando' },
             { value: 'finished', label: 'Concluídos' },
           ]}
         />
@@ -541,7 +589,7 @@ function LoadingRows() {
   );
 }
 
-/** `yyyy-MM-dd HH:mm:ss` as stored by performance.endtime → `dd/MM · HH:mm`. */
+/** `yyyy-MM-dd HH:mm:ss` → `dd/MM · HH:mm`. */
 function formatLastRun(value: string | null): string {
   if (!value) return '—';
   const match = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})/.exec(value);

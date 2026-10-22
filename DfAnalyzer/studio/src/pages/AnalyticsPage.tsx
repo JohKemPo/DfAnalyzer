@@ -6,6 +6,7 @@ import {
   useGraph,
   useIngestionHealth,
   useIngestionThroughput,
+  usePendingTransactions,
   useOverview,
   useVersions,
 } from '../api/catalog';
@@ -13,13 +14,14 @@ import { AttributeCompare } from '../analytics/AttributeCompare';
 import { ExecutionCompare } from '../analytics/ExecutionCompare';
 import { formatCount, formatSeconds } from '../analytics/format';
 import { Throughput } from '../analytics/Throughput';
+import { PERIOD_LABEL, withinPeriod, type Period } from '../analytics/period';
+import { downloadCsv, toCsv } from '../query/csv';
 import { Timeline } from '../analytics/Timeline';
 import { Chip, StudioCard, Tile } from '../components/primitives';
-import { CheckIcon, WarningIcon } from '../layout/icons';
+import { CheckIcon, ExportIcon, WarningIcon } from '../layout/icons';
 import { SectionSwitch, type DataflowSection } from '../layout/SectionSwitch';
 import { MONO } from '../theme/tokens';
 
-/** A tela de analytics. */
 export function AnalyticsPage({
   dataflowId,
   dataflowTag,
@@ -53,19 +55,24 @@ export function AnalyticsPage({
   const versionSummary = versions.data?.find((v) => v.version === effectiveVersion) ?? null;
 
   const executions = useExecutions(dataflowId, effectiveVersion);
+  const [period, setPeriod] = useState<Period>('all');
+  const shownExecutions = useMemo(
+    () => withinPeriod(executions.data ?? [], period, new Date()),
+    [executions.data, period],
+  );
 
   const [execAOverride, setExecAOverride] = useState<number | null>(null);
   const [execBOverride, setExecBOverride] = useState<number | null>(null);
   const [comparing, setComparing] = useState(false);
 
-  // Trocar de versão invalida as execucoes escolhidas: elas sao de outra versao.
+  // As execuções escolhidas são de outra versão.
   useEffect(() => {
     setExecAOverride(null);
     setExecBOverride(null);
   }, [effectiveVersion]);
 
-  const effectiveExecA = execAOverride ?? executions.data?.[0]?.id ?? null;
-  const effectiveExecB = execBOverride ?? executions.data?.[1]?.id ?? null;
+  const effectiveExecA = execAOverride ?? shownExecutions[0]?.id ?? null;
+  const effectiveExecB = execBOverride ?? shownExecutions[1]?.id ?? null;
 
   const timelineA = useExecutionTimeline(dataflowId, effectiveExecA);
   const timelineB = useExecutionTimeline(dataflowId, comparing ? effectiveExecB : null);
@@ -130,9 +137,41 @@ export function AnalyticsPage({
           </Box>
         </Box>
 
-        <Box sx={{ flex: 'none' }}>
+        <Stack direction="row" spacing={1} alignItems="center" sx={{ flex: 'none', flexWrap: 'wrap', rowGap: 1 }}>
           <SectionSwitch section={section} onNavigate={onNavigateSection} />
-        </Box>
+          <Box
+            component="button"
+            type="button"
+            disabled={shownExecutions.length === 0}
+            title="Baixa as execuções desta versão em CSV"
+            onClick={() =>
+              downloadCsv(
+                `${dataflowTag}-execucoes.csv`,
+                toCsv({
+                  columns: ['execucao', 'versao', 'inicio', 'fim', 'duracao_s', 'tasks', 'tasks_com_erro', 'tasks_em_execucao'].map(
+                    (name) => ({ name, type: 'TEXT' as const }),
+                  ),
+                  rows: shownExecutions.map((e) => [
+                    String(e.id), String(e.version), e.startTime ?? '', e.endTime ?? '',
+                    e.durationSeconds == null ? '' : String(e.durationSeconds),
+                    String(e.tasks), String(e.errorTasks), String(e.runningTasks),
+                  ]),
+                }),
+              )
+            }
+            sx={{
+              height: 34, px: 1.5, borderRadius: '9px', border: `1px solid ${studio.border}`,
+              bgcolor: studio.elev, color: studio.ink, fontSize: 13, fontWeight: 500, fontFamily: 'inherit',
+              display: 'inline-flex', alignItems: 'center', gap: 0.875, cursor: 'pointer', whiteSpace: 'nowrap',
+              '&:disabled': { opacity: 0.45, cursor: 'default' },
+              '&:hover:not(:disabled)': { borderColor: studio.muted },
+              '&:focus-visible': { outline: `2px solid ${studio.blue}`, outlineOffset: 2 },
+            }}
+          >
+            <ExportIcon size={14} />
+            Exportar
+          </Box>
+        </Stack>
       </Stack>
 
       {errored && (
@@ -172,11 +211,30 @@ export function AnalyticsPage({
                 label: `versão ${v.version} · ${formatCount(v.executions)} execuções`,
               }))}
             />
+            <Stack direction="row" spacing={0.75} alignItems="center">
+              <Box sx={{ fontSize: 11.5, color: studio.muted, flex: 'none' }}>Período</Box>
+              <Box
+                component="select"
+                aria-label="Período das execuções"
+                value={period}
+                onChange={(e: React.ChangeEvent<HTMLSelectElement>) => setPeriod(e.target.value as Period)}
+                sx={{
+                  height: 34, borderRadius: '9px', border: `1px solid ${studio.border}`,
+                  bgcolor: studio.elev, color: studio.ink, fontSize: 12.5, fontFamily: 'inherit', px: 1,
+                }}
+              >
+                {(Object.keys(PERIOD_LABEL) as Period[]).map((key) => (
+                  <option key={key} value={key}>
+                    {PERIOD_LABEL[key]}
+                  </option>
+                ))}
+              </Box>
+            </Stack>
             <PickerSelect
               label="Execução"
               value={effectiveExecA}
               onChange={setExecAOverride}
-              options={(executions.data ?? []).map((e) => ({
+              options={shownExecutions.map((e) => ({
                 value: e.id,
                 label: `#${e.id} · ${e.tag}`,
               }))}
@@ -202,7 +260,7 @@ export function AnalyticsPage({
                 label="com"
                 value={effectiveExecB}
                 onChange={setExecBOverride}
-                options={(executions.data ?? [])
+                options={shownExecutions
                   .filter((e) => e.id !== effectiveExecA)
                   .map((e) => ({ value: e.id, label: `#${e.id} · ${e.tag}` }))}
               />
@@ -210,7 +268,10 @@ export function AnalyticsPage({
           </Stack>
 
           <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(4, 1fr)' }, gap: 1.5 }}>
-            <Tile label="Execuções · versão" value={formatCount(versionSummary?.executions)} />
+            <Tile
+              label={period === 'all' ? 'Execuções · versão' : `Execuções · ${PERIOD_LABEL[period].toLowerCase()}`}
+              value={period === 'all' ? formatCount(versionSummary?.executions) : formatCount(shownExecutions.length)}
+            />
             <Tile label="Duração média" value={formatSeconds(avgDuration)} />
             <Tile label="Tasks ingeridas" value={formatCount(versionSummary?.tasks)} />
             <Tile
@@ -232,7 +293,6 @@ export function AnalyticsPage({
             />
           </Box>
 
-          {/* alignItems: o padrão do Stack é 'stretch', que força os dois cards à MESMA altura -- a do mais curto (Saúde da ingestão). */}
           <Stack
             direction={{ xs: 'column', lg: 'row' }}
             spacing={1.5}
@@ -256,7 +316,14 @@ export function AnalyticsPage({
               </Stack>
 
               <Box sx={{ mt: 2 }}>
-                {timelineA.isPending && <Skeleton variant="rounded" height={140} />}
+                {effectiveExecA === null && (
+                  <Box sx={{ py: 3, textAlign: 'center', fontSize: 12.5, color: studio.muted }}>
+                    {period === 'all'
+                      ? 'Esta versão não tem execuções registradas.'
+                      : `Nenhuma execução desta versão em: ${PERIOD_LABEL[period].toLowerCase()}.`}
+                  </Box>
+                )}
+                {effectiveExecA !== null && timelineA.isPending && <Skeleton variant="rounded" height={140} />}
                 {timelineA.isError && (
                   <Alert severity="error">Não foi possível carregar a linha do tempo.</Alert>
                 )}
@@ -313,6 +380,7 @@ export function AnalyticsPage({
                   />
                 ))}
               </Stack>
+              <PendingTransactions pending={overview.data?.queuePending ?? null} />
             </StudioCard>
           </Stack>
 
@@ -361,6 +429,65 @@ export function AnalyticsPage({
         </>
       )}
     </>
+  );
+}
+
+function PendingTransactions({ pending }: { pending: number | null }) {
+  const { studio } = useTheme();
+  const [open, setOpen] = useState(false);
+  const list = usePendingTransactions(open);
+
+  return (
+    <Box sx={{ mt: 1.25 }}>
+      <Box
+        component="button"
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((v) => !v)}
+        sx={{
+          p: 0, border: 0, bgcolor: 'transparent', color: studio.blue, fontFamily: 'inherit',
+          fontSize: 12, cursor: 'pointer', '&:hover': { textDecoration: 'underline' },
+        }}
+      >
+        {open ? 'Ocultar transações pendentes' : 'Ver transações pendentes'}
+        {pending !== null && !open ? ` (${pending})` : ''}
+      </Box>
+      {open && (
+        <Box sx={{ mt: 1 }}>
+          {list.isPending && <Skeleton variant="rounded" height={48} />}
+          {list.isError && <Alert severity="error">Não foi possível ler a fila de ingestão.</Alert>}
+          {list.data && list.data.length === 0 && (
+            <Box sx={{ fontSize: 12, color: studio.muted }}>
+              Fila vazia: tudo o que foi enviado já foi gravado ou recusado.
+            </Box>
+          )}
+          {list.data && list.data.length > 0 && (
+            <Box component="ul" sx={{ m: 0, p: 0, listStyle: 'none', maxHeight: 180, overflowY: 'auto' }}>
+              {list.data.map((item, index) => (
+                <Box
+                  component="li"
+                  key={index}
+                  sx={{
+                    display: 'flex', justifyContent: 'space-between', gap: 1, py: 0.5, fontSize: 12,
+                    borderBottom: `1px solid ${studio.border}`,
+                  }}
+                >
+                  <Box sx={{ fontFamily: MONO, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {item.dataflowTag ?? 'dataflow não informado'}
+                  </Box>
+                  <Box sx={{ color: studio.muted, flex: 'none' }}>{item.type === 'TASK' ? 'task' : 'dataflow'}</Box>
+                </Box>
+              ))}
+              {list.data.length === 100 && (
+                <Box component="li" sx={{ py: 0.5, fontSize: 11.5, color: studio.muted }}>
+                  Mostrando as 100 primeiras.
+                </Box>
+              )}
+            </Box>
+          )}
+        </Box>
+      )}
+    </Box>
   );
 }
 

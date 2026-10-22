@@ -14,14 +14,13 @@ import org.sql2o.data.Table;
 import rest.server.v2.DataflowSummary;
 
 /**
- * Read model behind the v2 API.
+ * Consultas de leitura da API v2.
  *
  * @author joao
  */
 @Repository
 public class CatalogDao {
 
-    /** One statement for the whole dataflow table. */
     private static final String DATAFLOW_SUMMARY_SQL =
             "SELECT df.id AS id, df.tag AS tag,"
             + " (SELECT COUNT(*) FROM data_transformation dt WHERE dt.df_id = df.id) AS transformations,"
@@ -91,6 +90,17 @@ public class CatalogDao {
         return count("SELECT COUNT(*) AS total FROM dataflow_execution;");
     }
 
+    /** Execuções com alguma task iniciada a partir de `since` (`yyyy-MM-dd HH:mm:ss`). */
+    public long countExecutionsSince(String since) {
+        String sql = "SELECT COUNT(DISTINCT t.df_exec) AS total FROM task t, performance p"
+                + " WHERE p.task_id = t.id AND t.df_exec IS NOT NULL"
+                + " AND CAST(p.starttime AS TIMESTAMP) >= CAST(:since AS TIMESTAMP);";
+        try (Connection con = sql2o.open()) {
+            Table result = con.createQuery(sql).addParameter("since", since).executeAndFetchTable();
+            return result.rows().isEmpty() ? 0L : result.rows().get(0).getLong("total");
+        }
+    }
+
     public long countTasks() {
         return count("SELECT COUNT(*) AS total FROM task;");
     }
@@ -99,7 +109,7 @@ public class CatalogDao {
         return count("SELECT COUNT(*) AS total FROM data_transformation;");
     }
 
-    /** Private on purpose, and every caller above passes a compile-time constant. */
+    /** Só recebe SQL constante. */
     private long count(String sql) {
         try (Connection con = sql2o.open()) {
             Table result = con.createQuery(sql).executeAndFetchTable();
@@ -112,7 +122,7 @@ public class CatalogDao {
         return value instanceof Number ? ((Number) value).intValue() : 0;
     }
 
-    /** MonetDB returns the timestamp difference as a decimal number of seconds. */
+    /** O MonetDB devolve a diferença de dois TIMESTAMP como decimal de segundos. */
     private static Double secondsOf(Row row, String column) {
         Object value = row.getObject(column);
         if (value == null) {

@@ -30,16 +30,16 @@ interface Props {
   lineage: LineageResponse | null;
   selectedNodeId: string | null;
   onSelectNode: (nodeId: string | null) => void;
-  /** Agrupamento por nível de detalhe. */
   grouped: boolean;
   expandedGroups: ReadonlySet<string>;
   onToggleGroup: (groupId: string) => void;
   onCollapseStats: (stats: { visible: number; collapsed: number }) => void;
   /** Tags de transformação com task `RUNNING` agora. */
   runningTags?: ReadonlySet<string>;
+  /** Ao mudar, descarta as posições arrastadas e reenquadra. */
+  layoutNonce?: number;
 }
 
-/** O grafo de proveniência em React Flow. */
 export function ProvenanceGraph(props: Props) {
   return (
     <ReactFlowProvider>
@@ -58,13 +58,13 @@ function GraphCanvas({
   onToggleGroup,
   onCollapseStats,
   runningTags,
+  layoutNonce = 0,
 }: Props) {
   const { studio } = useTheme();
   const { fitView } = useReactFlow();
-  // Em tela estreita o minimapa (150×96) cobria os próprios nós, numa área que já cabe inteira na vista.
+  // Em tela estreita o minimapa cobre os nós.
   const showMiniMap = useMediaQuery('(min-width:600px)');
 
-  // Agrupamento antes do layout: dagre só precisa posicionar o que aparece.
   const collapsed = useMemo(() => {
     if (!grouped) {
       return { nodes: graph.nodes as CollapsibleNode[], edges: graph.edges, collapsedCount: 0 };
@@ -79,7 +79,6 @@ function GraphCanvas({
     });
   }, [collapsed, onCollapseStats]);
 
-  // Posições: dependem só da topologia.
   const positioned = useMemo(() => {
     const nodes: Node[] = collapsed.nodes.map((node) => ({
       id: node.id,
@@ -103,11 +102,15 @@ function GraphCanvas({
     return { nodes: layoutGraph(nodes, edges), edges };
   }, [collapsed]);
 
-  // Posições movidas manualmente pela pessoa, por cima do layout automático.
   const [dragPositions, setDragPositions] = useState<Record<string, XYPosition>>({});
   useEffect(() => {
     setDragPositions({});
   }, [positioned]);
+  useEffect(() => {
+    if (layoutNonce === 0) return;
+    setDragPositions({});
+    void fitView({ padding: 0.18, duration: 240, maxZoom: 1 });
+  }, [layoutNonce, fitView]);
 
   const handleNodesChange = useCallback((changes: NodeChange[]) => {
     const moved = changes.filter(
@@ -124,7 +127,7 @@ function GraphCanvas({
     });
   }, []);
 
-  // "t:" é o prefixo que GraphService usa para o id de uma transformação — ver GraphService.transformationId no backend.
+  // "t:" é o prefixo de id de transformação do GraphService.
   const runningNodeIds = useMemo(
     () => new Set([...(runningTags ?? [])].map((tag) => `t:${tag}`)),
     [runningTags],
@@ -140,7 +143,6 @@ function GraphCanvas({
     };
   }, [lineage]);
 
-  // Estado visual: aplicado por cima das posições, sem recalcular o layout.
   const nodes = useMemo(
     () =>
       positioned.nodes.map((node) => {
@@ -204,7 +206,6 @@ function GraphCanvas({
     [positioned.edges, lineageIndex, studio],
   );
 
-  // Enquadra ao trocar de dataflow ou de visão, e só aí.
   useEffect(() => {
     const timer = window.setTimeout(() => {
       void fitView({ padding: 0.18, duration: 240, maxZoom: 1 });
@@ -215,7 +216,7 @@ function GraphCanvas({
   const handleNodeClick = useCallback<NodeMouseHandler>(
     (_event, node) => {
       const data = node.data as ProvenanceNodeData;
-      // Clicar num grupo abre o grupo; selecionar um grupo não faria sentido, já que ele não é um objeto da proveniência e sim uma dobra da tela.
+      // Grupo não é objeto da proveniência: clicar abre, não seleciona.
       if (isGroup(data.node)) {
         onToggleGroup(node.id);
         return;
@@ -225,7 +226,6 @@ function GraphCanvas({
     [onSelectNode, onToggleGroup, selectedNodeId],
   );
 
-  // Acima deste tamanho, o React Flow passa a desenhar apenas o que esta no viewport.
   const large = nodes.length > LARGE_GRAPH_THRESHOLD;
 
   return (
@@ -271,7 +271,6 @@ function GraphCanvas({
           pannable
           zoomable
           position="bottom-right"
-          // O padrão (200×150) sobra num pipeline linear e vira um bloco vazio.
           style={{
             width: 150,
             height: 96,

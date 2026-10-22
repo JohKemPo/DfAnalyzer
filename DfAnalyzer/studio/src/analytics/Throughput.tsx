@@ -1,14 +1,17 @@
 import { Box, useTheme } from '@mui/material';
+import { useState } from 'react';
 import type { IngestionThroughput } from '../api/catalog';
 import { Chip } from '../components/primitives';
 
 const WIDTH = 288;
 const HEIGHT = 64;
 
-/** Derivado só de performance.endtime; sem coluna nova. */
+/** Derivado de performance.endtime. */
 export function Throughput({ data }: { data: IngestionThroughput }) {
   const { studio } = useTheme();
   const points = polylinePoints(data.hourlyTaskCounts);
+  const [asTable, setAsTable] = useState(false);
+  const hours = data.hourlyTaskCounts.length;
 
   return (
     <Box>
@@ -54,6 +57,45 @@ export function Throughput({ data }: { data: IngestionThroughput }) {
         <span>12h atrás</span>
         <span>agora</span>
       </Box>
+
+      <Box
+        component="button"
+        type="button"
+        aria-expanded={asTable}
+        onClick={() => setAsTable((v) => !v)}
+        sx={{
+          mt: 1.25, p: 0, border: 0, bgcolor: 'transparent', color: studio.blue, fontFamily: 'inherit',
+          fontSize: 12, cursor: 'pointer', '&:hover': { textDecoration: 'underline' },
+        }}
+      >
+        {asTable ? 'Ocultar tabela' : 'Ver tabela'}
+      </Box>
+      {asTable && (
+        <Box
+          component="table"
+          sx={{
+            mt: 1, width: '100%', borderCollapse: 'collapse', fontSize: 11.5, fontVariantNumeric: 'tabular-nums',
+            '& th': { textAlign: 'left', color: studio.muted, fontWeight: 500, pb: 0.5 },
+            '& td, & th': { borderBottom: `1px solid ${studio.border}`, py: 0.375 },
+            '& td:last-of-type, & th:last-of-type': { textAlign: 'right' },
+          }}
+        >
+          <thead>
+            <tr>
+              <th>Hora</th>
+              <th>Tasks concluídas</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.hourlyTaskCounts.map((count, index) => (
+              <tr key={index}>
+                <td>{hours - 1 - index === 0 ? 'última hora' : `${hours - 1 - index}h atrás`}</td>
+                <td>{count.toLocaleString('pt-BR')}</td>
+              </tr>
+            ))}
+          </tbody>
+        </Box>
+      )}
     </Box>
   );
 }

@@ -14,21 +14,22 @@ import {
   SunIcon,
 } from './icons';
 
-/** The rail entries beyond Dataflows are shown disabled on purpose. */
 type NavIcon = ComponentType<SVGProps<SVGSVGElement> & { size?: number }>;
 
 interface NavEntry {
   key: string;
   label: string;
+  /** Rótulo da barra inferior em tela estreita. */
+  short: string;
   icon: NavIcon;
 }
 
 const NAV: NavEntry[] = [
-  { key: 'dataflows', label: 'Dataflows', icon: DataflowsIcon },
-  { key: 'graph', label: 'Grafo', icon: GraphIcon },
-  { key: 'query', label: 'Consulta', icon: QueryIcon },
-  { key: 'analytics', label: 'Analytics', icon: AnalyticsIcon },
-  { key: 'gallery', label: 'Galeria', icon: GalleryIcon },
+  { key: 'dataflows', label: 'Dataflows', short: 'Fluxos', icon: DataflowsIcon },
+  { key: 'graph', label: 'Grafo', short: 'Grafo', icon: GraphIcon },
+  { key: 'query', label: 'Consulta', short: 'Consulta', icon: QueryIcon },
+  { key: 'analytics', label: 'Analytics', short: 'Analytics', icon: AnalyticsIcon },
+  { key: 'gallery', label: 'Galeria', short: 'Galeria', icon: GalleryIcon },
 ];
 
 export function AppShell({
@@ -40,12 +41,9 @@ export function AppShell({
   children,
 }: {
   title: string;
-  /** Item do rail que fica aceso. */
   section: string;
-  /** Se ha um dataflow escolhido agora. */
   hasSelection: boolean;
   onNavigate: (section: string) => void;
-  /** Abre a busca global. */
   onOpenSearch?: () => void;
   children: ReactNode;
 }) {
@@ -64,9 +62,9 @@ export function AppShell({
         color: studio.ink,
       }}
     >
-      <Rail compact={compact} section={section} hasSelection={hasSelection} onNavigate={onNavigate} />
+      {!compact && <Rail compact={false} section={section} hasSelection={hasSelection} onNavigate={onNavigate} />}
 
-      <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+      <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', minWidth: 0, minHeight: 0 }}>
         <TopBar title={title} compact={compact} onOpenSearch={onOpenSearch} />
         <Box
           component="main"
@@ -79,13 +77,14 @@ export function AppShell({
             px: { xs: 2, sm: 2.75 },
             py: { xs: 2, sm: 2.5 },
             overflowY: 'auto',
-            // Flex-shrink e' 1 por padrao em todo filho direto.
             '& > *': { flexShrink: 0 },
           }}
         >
           {children}
         </Box>
       </Box>
+
+      {compact && <Rail compact section={section} hasSelection={hasSelection} onNavigate={onNavigate} />}
     </Box>
   );
 }
@@ -114,12 +113,11 @@ function Rail({
         ...(compact
           ? {
               flexDirection: 'row',
-              alignItems: 'center',
-              gap: 0.5,
-              px: 1,
-              height: 52,
-              borderBottom: `1px solid ${studio.border}`,
-              overflowX: 'auto',
+              alignItems: 'stretch',
+              px: 0.5,
+              height: 58,
+              borderTop: `1px solid ${studio.border}`,
+              pb: 'env(safe-area-inset-bottom, 0px)',
             }
           : {
               width: 64,
@@ -131,7 +129,7 @@ function Rail({
             }),
       }}
     >
-      <Box
+      {!compact && <Box
         sx={{
           width: 34,
           height: 34,
@@ -147,11 +145,12 @@ function Rail({
         }}
       >
         <LogoMark size={19} />
-      </Box>
+      </Box>}
 
       {NAV.map((entry) => (
         <RailButton
           key={entry.key}
+          compact={compact}
           entry={entry}
           active={entry.key === section}
           hasSelection={hasSelection}
@@ -164,11 +163,13 @@ function Rail({
 
 function RailButton({
   entry,
+  compact,
   active,
   hasSelection,
   onNavigate,
 }: {
   entry: NavEntry;
+  compact: boolean;
   active: boolean;
   hasSelection: boolean;
   onNavigate: (section: string) => void;
@@ -200,25 +201,32 @@ function RailButton({
         aria-label={entry.label}
         aria-current={active ? 'page' : undefined}
         sx={{
-          width: 44,
-          height: 44,
-          flex: 'none',
-          borderRadius: '10px',
+          ...(compact
+            ? { flex: '1 1 0', minWidth: 0, height: '100%', flexDirection: 'column', gap: 0.375, borderRadius: 0 }
+            : { width: 44, height: 44, flex: 'none', borderRadius: '10px' }),
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           border: '1px solid transparent',
-          bgcolor: active ? studio.blueDim : 'transparent',
+          fontFamily: 'inherit',
+          fontSize: 10,
+          fontWeight: 500,
+          bgcolor: active && !compact ? studio.blueDim : 'transparent',
           color: active ? studio.blue : studio.muted,
-          borderColor: active ? studio.blue : 'transparent',
+          borderColor: active && !compact ? studio.blue : 'transparent',
           cursor: disabled ? 'default' : 'pointer',
-          opacity: disabled ? 0.45 : 1,
+          opacity: disabled && !active ? 0.45 : 1,
           transition: 'background-color .12s, color .12s',
           '&:hover:not(:disabled)': { color: studio.ink },
           '&:focus-visible': { outline: `2px solid ${studio.blue}`, outlineOffset: 2 },
         }}
       >
         <Glyph size={20} />
+        {compact && (
+          <Box component="span" sx={{ maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+            {entry.short}
+          </Box>
+        )}
       </Box>
     </Tooltip>
   );

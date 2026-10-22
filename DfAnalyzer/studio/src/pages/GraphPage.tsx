@@ -1,4 +1,4 @@
-import { Alert, AlertTitle, Box, Menu, MenuItem, Skeleton, Stack, Tooltip, useTheme } from '@mui/material';
+import { Alert, AlertTitle, Box, Menu, MenuItem, Skeleton, Stack, Tooltip, useMediaQuery, useTheme } from '@mui/material';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   useExecutionTimeline,
@@ -14,6 +14,7 @@ import { Chip, Segmented, StudioCard } from '../components/primitives';
 import { downloadPng, downloadSvg, graphToSvg } from '../graph/exportImage';
 import { ProvenanceGraph } from '../graph/ProvenanceGraph';
 import { NodeInspector } from '../graph/NodeInspector';
+import { NodeList } from '../graph/NodeList';
 import { ExportIcon } from '../layout/icons';
 import { SectionSwitch, type DataflowSection } from '../layout/SectionSwitch';
 import { MONO } from '../theme/tokens';
@@ -23,7 +24,6 @@ type Detail = 'grouped' | 'full';
 /** Acima disto, o grafo abre agrupado. */
 const AUTO_GROUP_THRESHOLD = 60;
 
-/** A tela do grafo. */
 export function GraphPage({
   dataflowId,
   dataflowTag,
@@ -45,11 +45,14 @@ export function GraphPage({
   section: DataflowSection;
   onNavigateSection: (section: DataflowSection) => void;
 }) {
-  const { studio } = useTheme();
+  const theme = useTheme();
+  const { studio } = theme;
+  const compact = useMediaQuery(theme.breakpoints.down('sm'));
+  const [compactLayout, setCompactLayout] = useState<'list' | 'canvas'>('list');
+  const asList = compact && compactLayout === 'list';
 
   const graph = useGraph(dataflowId, view);
 
-  // Nível de detalhe.
   const [detail, setDetail] = useState<Detail | null>(null);
   const [expandedGroups, setExpandedGroups] = useState<ReadonlySet<string>>(new Set());
   const [collapseStats, setCollapseStats] = useState({ visible: 0, collapsed: 0 });
@@ -58,7 +61,6 @@ export function GraphPage({
     (graph.data?.nodes.length ?? 0) > AUTO_GROUP_THRESHOLD ? 'grouped' : 'full';
   const effectiveDetail = detail ?? autoDetail;
 
-  // Trocar de dataflow ou de visão zera as dobras abertas.
   useEffect(() => {
     setExpandedGroups(new Set());
   }, [dataflowId, view]);
@@ -80,10 +82,18 @@ export function GraphPage({
     return shown ? { origin: shown.origin, generator: shown.generator, version: shown.version } : undefined;
   }, [versions.data, graph.data]);
 
-  // Sem execução nenhuma, os hooks abaixo ficam desligados (enabled: false) em vez de pedir versão/execução -1.
   const executions = useExecutions(dataflowId, graph.data?.version ?? null, { live: true });
   const latestExecution = executions.data?.[0] ?? null;
-  const timeline = useExecutionTimeline(dataflowId, latestExecution?.id ?? null, { live: true });
+  // Sem escolha, mostra a execução mais recente.
+  const [pickedExecution, setPickedExecution] = useState<number | null>(null);
+  useEffect(() => {
+    setPickedExecution(null);
+  }, [dataflowId]);
+  const shownExecution =
+    executions.data?.find((e) => e.id === pickedExecution) ?? latestExecution;
+  const timeline = useExecutionTimeline(dataflowId, shownExecution?.id ?? null, { live: true });
+  const [layoutNonce, setLayoutNonce] = useState(0);
+  const [traceLineage, setTraceLineage] = useState(true);
   const runningTags = useMemo(
     () =>
       new Set(
@@ -93,6 +103,14 @@ export function GraphPage({
       ),
     [timeline.data],
   );
+
+  const selectedStats = useMemo(() => {
+    if (!shownExecution || !selectedNodeId?.startsWith('t:')) return undefined;
+    const tag = selectedNodeId.slice(2).toLowerCase();
+    const row = (timeline.data?.rows ?? []).find((r) => r.transformationTag.toLowerCase() === tag) ?? null;
+    // Enquanto carrega, não se afirma "nenhuma task".
+    return timeline.data ? { executionId: shownExecution.id, row } : undefined;
+  }, [shownExecution, selectedNodeId, timeline.data]);
 
   const selectedNode = useMemo(
     () => graph.data?.nodes.find((node) => node.id === selectedNodeId) ?? null,
@@ -118,7 +136,7 @@ export function GraphPage({
         spacing={1.75}
         alignItems={{ xs: 'stretch', md: 'flex-end' }}
       >
-        <Box sx={{ flexGrow: 1, minWidth: 0 }}>
+        <Box sx={{ flex: { xs: '0 0 auto', md: '0 0 280px' }, minWidth: 0 }}>
           <Stack direction="row" spacing={1} alignItems="center">
             <Box
               component="button"
@@ -151,12 +169,12 @@ export function GraphPage({
           </Box>
         </Box>
 
-        {/* flexWrap: sem quebra, esta fileira media 950 px numa tela de 390 px e a página inteira ganhava rolagem horizontal. */}
         <Stack
           direction="row"
           spacing={1}
+          useFlexGap
           alignItems="center"
-          sx={{ flex: 'none', flexWrap: 'wrap', rowGap: 1, minWidth: 0 }}
+          sx={{ flex: '1 1 0', flexWrap: 'wrap', rowGap: 1, minWidth: 0, justifyContent: { md: 'flex-end' } }}
         >
           <SectionSwitch section={section} onNavigate={onNavigateSection} />
           {counts && counts.total > AUTO_GROUP_THRESHOLD && (
@@ -182,7 +200,6 @@ export function GraphPage({
           )}
           {counts && (
             <Stack direction="row" spacing={0.75} sx={{ flexWrap: 'wrap', rowGap: 0.75 }}>
-              {/* Na visão de datasets não há nó de transformação: anunciar "0 transformações" seria ruído, não informação. */}
               {counts.transformations > 0 && (
                 <Chip tone="blue">{counts.transformations} transformações</Chip>
               )}
@@ -210,6 +227,102 @@ export function GraphPage({
               { value: 'dataset', label: 'Datasets' },
             ]}
           />
+          {(executions.data?.length ?? 0) > 0 && shownExecution && (
+            <Box
+              component="select"
+              aria-label="Execução mostrada no grafo"
+              title="Execução cujas contagens de tasks aparecem nos nós"
+              value={shownExecution.id}
+              onChange={(event: React.ChangeEvent<HTMLSelectElement>) => setPickedExecution(Number(event.target.value))}
+              sx={{
+                height: 29,
+                maxWidth: 230,
+                px: 1,
+                borderRadius: '8px',
+                border: `1px solid ${studio.border}`,
+                bgcolor: studio.elev,
+                color: studio.ink,
+                fontSize: 12,
+                fontFamily: 'inherit',
+              }}
+            >
+              {(executions.data ?? []).map((e) => (
+                <option key={e.id} value={e.id}>
+                  Execução #{e.id}
+                  {e.startTime ? ` · ${e.startTime.slice(0, 16)}` : ''}
+                </option>
+              ))}
+            </Box>
+          )}
+          {!asList && graph.data && graph.data.nodes.length > 0 && (
+            <Tooltip
+              title={
+                traceLineage
+                  ? 'Ao escolher um nó, acende o que está a montante e a jusante dele. Clique para desligar.'
+                  : 'Realce da linhagem desligado. Clique para ligar.'
+              }
+            >
+              <Box
+                component="button"
+                type="button"
+                aria-pressed={traceLineage}
+                onClick={() => setTraceLineage((on) => !on)}
+                sx={{
+                  height: 29,
+                  px: 1.25,
+                  borderRadius: '8px',
+                  border: `1px solid ${traceLineage ? studio.blue : studio.border}`,
+                  bgcolor: traceLineage ? studio.blueDim : studio.elev,
+                  color: traceLineage ? studio.blue : studio.ink,
+                  fontSize: 12,
+                  fontWeight: 500,
+                  fontFamily: 'inherit',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  '&:focus-visible': { outline: `2px solid ${studio.blue}`, outlineOffset: 2 },
+                }}
+              >
+                Rastrear linhagem
+              </Box>
+            </Tooltip>
+          )}
+          {!asList && graph.data && graph.data.nodes.length > 0 && (
+            <Tooltip title="Devolve os nós arrastados à posição calculada e reenquadra o grafo">
+              <Box
+                component="button"
+                type="button"
+                onClick={() => setLayoutNonce((n) => n + 1)}
+                sx={{
+                  height: 29,
+                  px: 1.25,
+                  borderRadius: '8px',
+                  border: `1px solid ${studio.border}`,
+                  bgcolor: studio.elev,
+                  color: studio.ink,
+                  fontSize: 12,
+                  fontWeight: 500,
+                  fontFamily: 'inherit',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  '&:hover': { borderColor: studio.muted },
+                  '&:focus-visible': { outline: `2px solid ${studio.blue}`, outlineOffset: 2 },
+                }}
+              >
+                Auto-layout
+              </Box>
+            </Tooltip>
+          )}
+          {compact && (
+            <Segmented
+              ariaLabel="Como mostrar os nós"
+              value={compactLayout}
+              onChange={setCompactLayout}
+              options={[
+                { value: 'list', label: 'Lista' },
+                { value: 'canvas', label: 'Desenho' },
+              ]}
+            />
+          )}
           {graph.data && graph.data.nodes.length > 0 && (
             <ExportMenu graph={graph.data} dataflowId={dataflowId} dataflowTag={dataflowTag} view={view} />
           )}
@@ -250,9 +363,18 @@ export function GraphPage({
               flexDirection: { xs: 'column', lg: 'row' },
             }}
           >
+            {asList ? (
+              <NodeList
+                nodes={graph.data.nodes}
+                timeline={timeline.data?.rows ?? []}
+                runningTags={runningTags}
+                selectedNodeId={selectedNodeId}
+                onSelectNode={onSelectNode}
+              />
+            ) : (
             <ProvenanceGraph
               graph={graph.data}
-              lineage={selectedNodeId ? (lineage.data ?? null) : null}
+              lineage={selectedNodeId && traceLineage ? (lineage.data ?? null) : null}
               selectedNodeId={selectedNodeId}
               onSelectNode={onSelectNode}
               grouped={effectiveDetail === 'grouped'}
@@ -260,16 +382,57 @@ export function GraphPage({
               onToggleGroup={toggleGroup}
               onCollapseStats={setCollapseStats}
               runningTags={runningTags}
+              layoutNonce={layoutNonce}
             />
-            {selectedNode && (
+            )}
+            {selectedNode && !asList && (
               <NodeInspector
                 node={selectedNode}
                 lineage={lineage.data ?? null}
                 dataflowId={dataflowId}
                 mapping={mapping}
+                stats={selectedStats}
+                onQuery={() => onNavigateSection('query')}
+                onOpenData={() => onNavigateSection('gallery')}
                 onClose={() => onSelectNode(null)}
                 onFocusNode={onSelectNode}
               />
+            )}
+            {selectedNode && asList && (
+              <Box
+                role="dialog"
+                aria-label={`Detalhes de ${selectedNode.tag}`}
+                sx={{
+                  position: 'fixed',
+                  left: 0,
+                  right: 0,
+                  // Acima da barra de navegação inferior.
+                  bottom: 'calc(58px + env(safe-area-inset-bottom, 0px))',
+                  zIndex: theme.zIndex.drawer,
+                  maxHeight: '62dvh',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  overflow: 'hidden',
+                  borderRadius: '18px 18px 0 0',
+                  borderTop: `1px solid ${studio.border}`,
+                  bgcolor: studio.surface,
+                  boxShadow: studio.shadow,
+                }}
+              >
+                <Box sx={{ overflowY: 'auto', minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+                  <NodeInspector
+                    node={selectedNode}
+                    lineage={lineage.data ?? null}
+                    dataflowId={dataflowId}
+                    mapping={mapping}
+                    stats={selectedStats}
+                    onQuery={() => onNavigateSection('query')}
+                    onOpenData={() => onNavigateSection('gallery')}
+                    onClose={() => onSelectNode(null)}
+                    onFocusNode={onSelectNode}
+                  />
+                </Box>
+              </Box>
             )}
           </Box>
         )}
@@ -278,7 +441,6 @@ export function GraphPage({
   );
 }
 
-/** Exportação do grafo: SVG, PNG e PROV-JSON. */
 function ExportMenu({
   graph,
   dataflowId,

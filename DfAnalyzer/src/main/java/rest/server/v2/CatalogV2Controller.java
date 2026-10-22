@@ -1,5 +1,10 @@
 package rest.server.v2;
 
+import di.provenance.DataSetTableCheck;
+import di.object.process.Transaction;
+import java.util.ArrayList;
+import java.time.format.DateTimeFormatter;
+import java.time.LocalDateTime;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +29,7 @@ import rest.config.ProvExporter;
 import rest.config.QueryService;
 
 /**
- * V2 catalogue endpoints.
+ * Endpoints de catálogo da API v2.
  *
  * @author joao
  */
@@ -75,6 +80,8 @@ public class CatalogV2Controller {
                 catalog.countDataflows(),
                 catalog.countVersions(),
                 catalog.countExecutions(),
+                catalog.countExecutionsSince(LocalDateTime.now().minusDays(7)
+                        .format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))),
                 catalog.countTransformations(),
                 catalog.countTasks(),
                 queue.pendentTransactions.size(),
@@ -83,6 +90,21 @@ public class CatalogV2Controller {
                 queue.transactionProcessingTime,
                 queue.ingestionErrors,
                 queue.lastIngestionError);
+    }
+
+    /** Até cem transações da fila de ingestão. */
+    @GetMapping("/ingestion/pending")
+    public List<PendingTransaction> pendingTransactions() {
+        List<PendingTransaction> pending = new ArrayList<>();
+        for (Object item : queue.pendentTransactions) {
+            if (pending.size() >= 100) {
+                break;
+            }
+            Transaction t = (Transaction) item;
+            String tag = t.getDataflowTag() != null ? t.getDataflowTag() : DataSetTableCheck.dataflowTag(t);
+            pending.add(new PendingTransaction(String.valueOf(t.getType()), tag));
+        }
+        return pending;
     }
 
     /** Grafo de proveniência prospectiva de uma versão do dataflow. */
@@ -118,7 +140,7 @@ public class CatalogV2Controller {
         return graphService.traceLineage(graph, nodeId);
     }
 
-    /** Executa uma consulta de proveniencia e devolve os dados. */
+    /** Executa uma consulta de proveniência e devolve os dados. */
     @PostMapping("/dataflows/{id}/query")
     public QueryResult query(@PathVariable("id") int dataflowId,
             @RequestBody QueryRequest request) {
@@ -135,7 +157,7 @@ public class CatalogV2Controller {
         return queryService.run(resolved.tag, resolved.version, resolved.dataflow, request);
     }
 
-    /** Exporta a proveniencia prospectiva em PROV-JSON. */
+    /** Exporta a proveniência prospectiva em PROV-JSON. */
     @GetMapping("/dataflows/{id}/prov.json")
     public Map<String, Object> provJson(@PathVariable("id") int dataflowId,
             @RequestParam(value = "version", required = false) Integer version) {
@@ -153,7 +175,6 @@ public class CatalogV2Controller {
         }
     }
 
-    /** Tag, versão e catálogo carregado — o trio que todo endpoint de grafo precisa. */
     private static final class Resolved {
         final String tag;
         final int version;
@@ -188,7 +209,7 @@ public class CatalogV2Controller {
         return new Resolved(tag, version, dataflow);
     }
 
-    /** A caller cannot ask for the whole table by sending size=10000000. */
+    /** Limita o tamanho de página pedido pelo cliente. */
     private static int clamp(int size) {
         if (size <= 0) {
             return DEFAULT_PAGE_SIZE;
