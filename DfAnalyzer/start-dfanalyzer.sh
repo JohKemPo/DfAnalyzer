@@ -11,6 +11,7 @@ echo "Removing data from previous executions"
 rm $DFA_PROPERTIES
 # organizing provenance directories
 rm -rf provenance/*
+mkdir -p provenance
 # cleaning up MonetDB directory
 killall mserver5
 killall monetdbd
